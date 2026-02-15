@@ -35,6 +35,14 @@ object RootUtil {
         }
     }
 
+    fun isPrivacyModeEnabled(): Boolean {
+        // Check DNS settings
+        val dnsMode = execute("settings get global private_dns_mode").trim()
+        val dnsSpecifier = execute("settings get global private_dns_specifier").trim()
+
+        return dnsMode == "hostname" && dnsSpecifier == "a4f5f2.dns.nextdns.io"
+    }
+
     // Commands to enable Privacy Mode
     fun enablePrivacyMode(): String {
         val script = """

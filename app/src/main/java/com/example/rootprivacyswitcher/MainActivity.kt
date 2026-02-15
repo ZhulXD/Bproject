@@ -45,10 +45,24 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (hasRoot) {
                     log("Root access GRANTED.")
+                    checkPrivacyStatus()
                 } else {
                     log("Root access DENIED. App will not function.")
                     btnToggle.isEnabled = false
                     btnToggle.text = "NO ROOT"
+                }
+            }
+        }.start()
+    }
+
+    private fun checkPrivacyStatus() {
+        Thread {
+            val isActive = RootUtil.isPrivacyModeEnabled()
+            runOnUiThread {
+                isPrivacyActive = isActive
+                updateUIState()
+                if (isActive) {
+                    log("Privacy Mode detected: ACTIVE")
                 }
             }
         }.start()
