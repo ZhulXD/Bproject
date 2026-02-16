@@ -2,13 +2,15 @@ package com.bypassnext.release
 
 import java.io.DataOutputStream
 import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object RootUtil {
 
     private const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
 
-    fun execute(command: String): String {
-        return try {
+    suspend fun execute(command: String): String = withContext(Dispatchers.IO) {
+        try {
             val process = Runtime.getRuntime().exec("su")
             val os = DataOutputStream(process.outputStream)
             os.writeBytes(command + "\n")
@@ -27,8 +29,8 @@ object RootUtil {
         }
     }
 
-    fun isRootAvailable(): Boolean {
-        return try {
+    suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
+        try {
             val p = Runtime.getRuntime().exec("su -c id")
             p.waitFor()
             p.exitValue() == 0
@@ -37,7 +39,7 @@ object RootUtil {
         }
     }
 
-    fun isPrivacyModeEnabled(): Boolean {
+    suspend fun isPrivacyModeEnabled(): Boolean {
         // Check DNS settings
         val dnsMode = execute("settings get global private_dns_mode").trim()
         val dnsSpecifier = execute("settings get global private_dns_specifier").trim()
@@ -51,7 +53,7 @@ object RootUtil {
 
     // Commands to enable Privacy Mode
     // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
-    fun enablePrivacyMode(tempDir: String = "/data/local/tmp/filtered_certs"): String {
+    suspend fun enablePrivacyMode(tempDir: String = "/data/local/tmp/filtered_certs"): String {
         val script = """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
@@ -111,7 +113,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    fun disablePrivacyMode(tempDir: String = "/data/local/tmp/filtered_certs"): String {
+    suspend fun disablePrivacyMode(tempDir: String = "/data/local/tmp/filtered_certs"): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }

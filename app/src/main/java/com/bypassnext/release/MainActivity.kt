@@ -6,9 +6,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,9 +43,7 @@ class MainActivity : AppCompatActivity() {
     private fun checkRoot() {
         log("Checking root access...")
         lifecycleScope.launch {
-            val hasRoot = withContext(Dispatchers.IO) {
-                RootUtil.isRootAvailable()
-            }
+            val hasRoot = RootUtil.isRootAvailable()
             if (hasRoot) {
                 log("Root access GRANTED.")
                 checkPrivacyStatus()
@@ -61,9 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkPrivacyStatus() {
         lifecycleScope.launch {
-            val isActive = withContext(Dispatchers.IO) {
-                RootUtil.isPrivacyModeEnabled()
-            }
+            val isActive = RootUtil.isPrivacyModeEnabled()
             isPrivacyActive = isActive
             updateUIState()
             if (isActive) {
@@ -77,9 +71,7 @@ class MainActivity : AppCompatActivity() {
         btnToggle.isEnabled = false // Prevent double clicks
 
         lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                RootUtil.enablePrivacyMode()
-            }
+            val result = RootUtil.enablePrivacyMode()
             log(result)
             if (!result.startsWith("Error")) {
                 isPrivacyActive = true
@@ -96,9 +88,7 @@ class MainActivity : AppCompatActivity() {
         btnToggle.isEnabled = false
 
         lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                RootUtil.disablePrivacyMode()
-            }
+            val result = RootUtil.disablePrivacyMode()
             log(result)
             if (!result.startsWith("Error")) {
                 isPrivacyActive = false
