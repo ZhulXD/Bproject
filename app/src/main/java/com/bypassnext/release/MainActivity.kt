@@ -20,6 +20,10 @@ class MainActivity : AppCompatActivity() {
 
     private var isPrivacyActive = false
 
+    private val logDateFormat by lazy {
+        SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -125,7 +129,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun log(message: String) {
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val timestamp = logDateFormat.format(Date())
         tvLog.append("\n> [$timestamp] $message")
         // Auto scroll could be added here
     }
