@@ -2,9 +2,9 @@ package com.bypassnext.release
 
 interface PrivacyRepository {
     suspend fun isRootAvailable(): Boolean
-    suspend fun isPrivacyModeEnabled(): Boolean
-    suspend fun enablePrivacyMode(): String
-    suspend fun disablePrivacyMode(): String
+    suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String
+    suspend fun disablePrivacyMode(tempDir: String): String
 }
 
 class DefaultPrivacyRepository : PrivacyRepository {
@@ -12,15 +12,15 @@ class DefaultPrivacyRepository : PrivacyRepository {
         return RootUtil.isRootAvailable()
     }
 
-    override suspend fun isPrivacyModeEnabled(): Boolean {
-        return RootUtil.isPrivacyModeEnabled()
+    override suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean {
+        return RootUtil.isPrivacyModeEnabled(nextDnsId)
     }
 
-    override suspend fun enablePrivacyMode(): String {
-        return RootUtil.enablePrivacyMode()
+    override suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String {
+        return RootUtil.enablePrivacyMode(nextDnsId, tempDir)
     }
 
-    override suspend fun disablePrivacyMode(): String {
-        return RootUtil.disablePrivacyMode()
+    override suspend fun disablePrivacyMode(tempDir: String): String {
+        return RootUtil.disablePrivacyMode(tempDir)
     }
 }

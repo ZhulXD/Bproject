@@ -8,6 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnToggle: Button
@@ -37,14 +41,25 @@ class MainActivity : AppCompatActivity() {
 
         // Load saved ID
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val savedId = prefs.getString(KEY_NEXTDNS_ID, "")
+        val savedId = prefs.getString(KEY_NEXTDNS_ID, "") ?: ""
         etNextDnsId.setText(savedId)
 
         val factory = MainViewModelFactory(DefaultPrivacyRepository(), AndroidStringProvider(this))
         viewModel = androidx.lifecycle.ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         btnToggle.setOnClickListener {
-            viewModel.togglePrivacy()
+            val nextDnsId = etNextDnsId.text.toString().trim()
+            if (nextDnsId.isEmpty()) {
+                log("Error: NextDNS ID is required")
+            } else {
+                // Save ID
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                    .putString(KEY_NEXTDNS_ID, nextDnsId)
+                    .apply()
+
+                val tempDir = cacheDir.absolutePath + "/filtered_certs"
+                viewModel.togglePrivacy(nextDnsId, tempDir)
+            }
         }
 
         lifecycleScope.launch {
@@ -52,62 +67,37 @@ class MainActivity : AppCompatActivity() {
                 render(state)
             }
         }
-    }
 
-    private suspend fun checkPrivacyStatus() {
-        // Run directly in the caller's scope (which is already lifecycle-aware)
-        // RootUtil.isPrivacyModeEnabled() is suspend and handles its own dispatching (IO)
-        val nextDnsId = etNextDnsId.text.toString().trim()
-        val isActive = RootUtil.isPrivacyModeEnabled(nextDnsId)
-        isPrivacyActive = isActive
-        updateUIState()
-        if (isActive) {
-            log(getString(R.string.privacy_mode_detected_active))
+        // Initial check
+        if (savedId.isNotEmpty()) {
+            viewModel.checkPrivacyStatus(savedId)
         }
     }
 
-    private fun enablePrivacy() {
-        val nextDnsId = etNextDnsId.text.toString().trim()
-        if (nextDnsId.isEmpty()) {
-            log("Error: NextDNS ID is required")
-            return
+    private fun render(state: MainUiState) {
+        // Log updates
+        // Join logs with newline
+        val logsText = state.logs.joinToString("\n")
+        if (tvLog.text.toString() != logsText) {
+             tvLog.text = logsText
+             // Scroll to bottom
+             val scrollAmount = tvLog.layout?.let { layout ->
+                 tvLog.scrollY + (tvLog.height) - layout.getLineBottom(tvLog.lineCount - 1)
+             } ?: 0
+             // Ideally use a ScrollView, but simple text update is fine for now
         }
 
-        // Save ID
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-            .putString(KEY_NEXTDNS_ID, nextDnsId)
-            .apply()
-
-        log(getString(R.string.activating_privacy_mode))
-        btnToggle.isEnabled = false // Prevent double clicks
-
-        lifecycleScope.launch {
-            val result = RootUtil.enablePrivacyMode(nextDnsId)
-            log(result)
-            if (!result.startsWith("Error")) {
-                isPrivacyActive = true
-                updateUIState()
-            } else {
-                btnToggle.text = getString(R.string.status_inactive)
-                btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
-                btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
-
-                tvDnsStatus.text = getString(R.string.system_default)
-                tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
-
-                tvCertStatus.text = getString(R.string.system_default)
-                tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
-            }
-            btnToggle.isEnabled = true
-        }
-    }
-
-    private fun updateUIState() {
-        etNextDnsId.isEnabled = !isPrivacyActive
-        if (isPrivacyActive) {
+        // Update UI based on state
+        etNextDnsId.isEnabled = !state.isPrivacyActive
+        if (state.isPrivacyActive) {
             btnToggle.text = getString(R.string.status_active)
+            // Use try-catch or safe call if resources might be missing, but assume they exist
             btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
-            btnToggle.setBackgroundResource(R.drawable.bg_circle_active)
+            try {
+                btnToggle.setBackgroundResource(R.drawable.bg_circle_active)
+            } catch (e: Exception) {
+                // Fallback or ignore
+            }
 
             tvDnsStatus.text = etNextDnsId.text.toString()
             tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
@@ -117,7 +107,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             btnToggle.text = getString(R.string.status_inactive)
             btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
-            btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
+            try {
+                btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
+            } catch (e: Exception) {
+                // Fallback
+            }
 
             tvDnsStatus.text = getString(R.string.system_default)
             tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
@@ -125,11 +119,13 @@ class MainActivity : AppCompatActivity() {
             tvCertStatus.text = getString(R.string.system_default)
             tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
+
+        // Handle busy state
+        btnToggle.isEnabled = !state.isBusy
     }
 
     private fun log(message: String) {
         val timestamp = logDateFormat.format(Date())
         tvLog.append("\n> [$timestamp] $message")
-        // Auto scroll could be added here
     }
 }
