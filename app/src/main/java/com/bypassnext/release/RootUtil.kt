@@ -67,12 +67,9 @@ object RootUtil {
             # Copy all certs
             cp ${'$'}SRC_DIR/* "${'$'}TEMP_DIR/"
 
-            # Filter out the blocked ones (Digicert, GlobalSign, SSL) based on content
+            # Filter out the blocked ones (DigiCert, GlobalSign, SSL) based on content
             # Note: Using grep on binary files can be tricky, assuming ASCII text exists inside PEM
-            grep -l "Digicert" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
-            grep -l "DigiCert" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
-            grep -l "GlobalSign" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
-            grep -l "SSL" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
+            grep -El "Digi[Cc]ert|GlobalSign|SSL" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
 
             # Mount the filtered directory over the system one
             mount -o bind "${'$'}TEMP_DIR" "${'$'}SRC_DIR"
@@ -86,9 +83,8 @@ object RootUtil {
         return execute(script)
     }
 
-    // Commands to disable Privacy Mode (Revert)
-    fun disablePrivacyMode(tempDir: String): String {
-        val script = """
+    fun getDisablePrivacyScript(): String {
+        return """
             # 1. Reset DNS
             settings put global private_dns_mode off
             settings delete global private_dns_specifier
@@ -105,7 +101,10 @@ object RootUtil {
 
             echo "Privacy Mode Deactivated: DNS reset, System Certificates restored."
         """.trimIndent()
+    }
 
-        return execute(script)
+    // Commands to disable Privacy Mode (Revert)
+    fun disablePrivacyMode(): String {
+        return execute(getDisablePrivacyScript())
     }
 }
