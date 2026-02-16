@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">BypassNext</string>
+    <string name="checking_root_access">Checking root access…</string>
+    <string name="root_access_granted">Root access GRANTED.</string>
+    <string name="root_access_denied">Root access DENIED. App will not function.</string>
+    <string name="no_root">NO ROOT</string>
+    <string name="privacy_mode_detected_active">Privacy Mode detected: ACTIVE</string>
+    <string name="activating_privacy_mode">Activating Privacy Mode…</string>
+    <string name="failed_to_activate">Failed to activate.</string>
+    <string name="deactivating_privacy_mode">Deactivating Privacy Mode…</string>
+    <string name="failed_to_deactivate">Failed to deactivate.</string>
+    <string name="status_active">ACTIVE</string>
+    <string name="dns_nextdns">a4f5f2.dns.nextdns.io</string>
+    <string name="cert_blocked">Blocked: Digicert, GlobalSign, SSL</string>
+    <string name="status_inactive">INACTIVE</string>
+    <string name="system_default">System Default</string>
+    <string name="app_title">BYPASS NEXT</string>
+    <string name="label_private_dns">PRIVATE DNS</string>
+    <string name="label_blocked_credentials">BLOCKED CREDENTIALS</string>
+    <string name="status_none">None</string>
+    <string name="label_system_log">SYSTEM LOG</string>
+    <string name="log_ready">&gt; Ready.</string>
 </resources>
