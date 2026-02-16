@@ -1,4 +1,4 @@
-package com.example.rootprivacyswitcher
+package com.bypassnext.release
 
 import java.io.DataOutputStream
 import java.io.IOException

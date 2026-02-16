@@ -15,7 +15,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="48dp"
         android:fontFamily="monospace"
-        android:text="ROOT PRIVACY SWITCHER"
+        android:text="BYPASS NEXT"
         android:textColor="#00FF41"
         android:textSize="20sp"
         android:letterSpacing="0.1"/>
@@ -114,7 +114,8 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="#000000"
         android:padding="12dp">
 
