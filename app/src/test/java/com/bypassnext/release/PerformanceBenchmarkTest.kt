@@ -27,10 +27,11 @@ class PerformanceBenchmarkTest {
     fun measurePrivacyCheckPerformance() = runTest {
         // Setup
         RootUtil.shellExecutor = MockShellExecutor(100)
+        val testId = "a4f5f2.dns.nextdns.io"
 
         // Measure
         val time = measureTimeMillis {
-            val isEnabled = RootUtil.isPrivacyModeEnabled()
+            val isEnabled = RootUtil.isPrivacyModeEnabled(testId)
             assertTrue(isEnabled)
         }
 

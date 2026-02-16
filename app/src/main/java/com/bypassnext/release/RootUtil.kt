@@ -62,10 +62,8 @@ object RootUtil {
         return dnsMode == "hostname" && dnsSpecifier == expectedNextDnsId
     }
 
-    // Commands to enable Privacy Mode
-    // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
-    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String = DEFAULT_TEMP_DIR): String {
-        val script = """
+    fun getEnablePrivacyScript(nextDnsId: String, tempDir: String): String {
+        return """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
             settings put global private_dns_specifier $nextDnsId
@@ -103,8 +101,8 @@ object RootUtil {
 
     // Commands to enable Privacy Mode
     // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
-    suspend fun enablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
-        return execute(getEnablePrivacyScript(tempDir))
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String = DEFAULT_TEMP_DIR): String {
+        return execute(getEnablePrivacyScript(nextDnsId, tempDir))
     }
 
     fun getDisablePrivacyScript(tempDir: String): String {
@@ -128,7 +126,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    suspend fun disablePrivacyMode(tempDir: String): String {
+    suspend fun disablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }

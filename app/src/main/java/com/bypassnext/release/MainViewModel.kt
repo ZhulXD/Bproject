@@ -52,7 +52,6 @@ class MainViewModel(
             if (hasRoot) {
                 log(stringProvider.getString(R.string.root_access_granted))
                 _uiState.update { it.copy(isRootGranted = true, isCheckingRoot = false) }
-                checkPrivacyStatus()
             } else {
                 log(stringProvider.getString(R.string.root_access_denied))
                 _uiState.update { it.copy(isRootGranted = false, isCheckingRoot = false) }
@@ -60,9 +59,11 @@ class MainViewModel(
         }
     }
 
-    private fun checkPrivacyStatus() {
+    fun checkPrivacyStatus(nextDnsId: String) {
+        if (nextDnsId.isEmpty()) return
+
         viewModelScope.launch {
-            val isActive = repository.isPrivacyModeEnabled()
+            val isActive = repository.isPrivacyModeEnabled(nextDnsId)
             _uiState.update { it.copy(isPrivacyActive = isActive) }
             if (isActive) {
                 log(stringProvider.getString(R.string.privacy_mode_detected_active))
@@ -70,22 +71,22 @@ class MainViewModel(
         }
     }
 
-    fun togglePrivacy() {
+    fun togglePrivacy(nextDnsId: String, tempDir: String) {
         if (_uiState.value.isBusy) return
 
         if (_uiState.value.isPrivacyActive) {
-            disablePrivacy()
+            disablePrivacy(tempDir)
         } else {
-            enablePrivacy()
+            enablePrivacy(nextDnsId, tempDir)
         }
     }
 
-    private fun enablePrivacy() {
+    private fun enablePrivacy(nextDnsId: String, tempDir: String) {
         log(stringProvider.getString(R.string.activating_privacy_mode))
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            val result = repository.enablePrivacyMode()
+            val result = repository.enablePrivacyMode(nextDnsId, tempDir)
             log(result)
             if (!result.startsWith("Error")) {
                 _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
@@ -96,12 +97,12 @@ class MainViewModel(
         }
     }
 
-    private fun disablePrivacy() {
+    private fun disablePrivacy(tempDir: String) {
         log(stringProvider.getString(R.string.deactivating_privacy_mode))
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            val result = repository.disablePrivacyMode()
+            val result = repository.disablePrivacyMode(tempDir)
             log(result)
             if (!result.startsWith("Error")) {
                 _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
