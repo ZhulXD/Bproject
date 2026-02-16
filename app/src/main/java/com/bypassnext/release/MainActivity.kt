@@ -41,16 +41,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkRoot() {
-        log("Checking root access...")
+        log(getString(R.string.checking_root_access))
         lifecycleScope.launch {
             val hasRoot = RootUtil.isRootAvailable()
             if (hasRoot) {
-                log("Root access GRANTED.")
+                log(getString(R.string.root_access_granted))
                 checkPrivacyStatus()
             } else {
-                log("Root access DENIED. App will not function.")
+                log(getString(R.string.root_access_denied))
                 btnToggle.isEnabled = false
-                btnToggle.text = "NO ROOT"
+                btnToggle.text = getString(R.string.no_root)
             }
         }
     }
@@ -62,12 +62,12 @@ class MainActivity : AppCompatActivity() {
         isPrivacyActive = isActive
         updateUIState()
         if (isActive) {
-            log("Privacy Mode detected: ACTIVE")
+            log(getString(R.string.privacy_mode_detected_active))
         }
     }
 
     private fun enablePrivacy() {
-        log("Activating Privacy Mode...")
+        log(getString(R.string.activating_privacy_mode))
         btnToggle.isEnabled = false // Prevent double clicks
 
         lifecycleScope.launch {
@@ -77,14 +77,14 @@ class MainActivity : AppCompatActivity() {
                 isPrivacyActive = true
                 updateUIState()
             } else {
-                log("Failed to activate.")
+                log(getString(R.string.failed_to_activate))
             }
             btnToggle.isEnabled = true
         }
     }
 
     private fun disablePrivacy() {
-        log("Deactivating Privacy Mode...")
+        log(getString(R.string.deactivating_privacy_mode))
         btnToggle.isEnabled = false
 
         lifecycleScope.launch {
@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
                 isPrivacyActive = false
                 updateUIState()
             } else {
-                log("Failed to deactivate.")
+                log(getString(R.string.failed_to_deactivate))
             }
             btnToggle.isEnabled = true
         }
@@ -102,24 +102,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUIState() {
         if (isPrivacyActive) {
-            btnToggle.text = "ACTIVE"
+            btnToggle.text = getString(R.string.status_active)
             btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
             btnToggle.setBackgroundResource(R.drawable.bg_circle_active)
 
-            tvDnsStatus.text = "a4f5f2.dns.nextdns.io"
+            tvDnsStatus.text = getString(R.string.dns_nextdns)
             tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
 
-            tvCertStatus.text = "Blocked: Digicert, GlobalSign, SSL"
+            tvCertStatus.text = getString(R.string.cert_blocked)
             tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
         } else {
-            btnToggle.text = "INACTIVE"
+            btnToggle.text = getString(R.string.status_inactive)
             btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
             btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
 
-            tvDnsStatus.text = "System Default"
+            tvDnsStatus.text = getString(R.string.system_default)
             tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
 
-            tvCertStatus.text = "System Default"
+            tvCertStatus.text = getString(R.string.system_default)
             tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
     }
