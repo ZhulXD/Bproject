@@ -1,4 +1,4 @@
-package com.example.rootprivacyswitcher
+package com.bypassnext.release
 
 import android.os.Bundle
 import android.widget.Button

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.rootprivacyswitcher"
+    namespace = "com.bypassnext.release"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.rootprivacyswitcher"
+        applicationId = "com.bypassnext.release"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
