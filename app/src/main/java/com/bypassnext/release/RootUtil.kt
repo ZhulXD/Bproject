@@ -37,8 +37,7 @@ object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
 
-    internal const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
-    private const val DEFAULT_TEMP_DIR = "/data/local/tmp/filtered_certs"
+    private const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
 
     suspend fun execute(command: String): String = shellExecutor.execute(command)
 
@@ -64,8 +63,9 @@ object RootUtil {
         return dnsMode == "hostname" && dnsSpecifier == NEXTDNS_ID
     }
 
-    fun getEnablePrivacyScript(tempDir: String = DEFAULT_TEMP_DIR): String {
-        return """
+    // Commands to enable Privacy Mode
+    suspend fun enablePrivacyMode(tempDir: String): String {
+        val script = """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
             settings put global private_dns_specifier $NEXTDNS_ID
@@ -107,7 +107,7 @@ object RootUtil {
         return execute(getEnablePrivacyScript(tempDir))
     }
 
-    fun getDisablePrivacyScript(tempDir: String = DEFAULT_TEMP_DIR): String {
+    fun getDisablePrivacyScript(tempDir: String): String {
         return """
             # 1. Reset DNS
             settings put global private_dns_mode off
@@ -128,7 +128,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    suspend fun disablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun disablePrivacyMode(tempDir: String): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }

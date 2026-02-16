@@ -1,0 +1,133 @@
+package com.bypassnext.release
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class MainUiState(
+    val isRootGranted: Boolean = false,
+    val isCheckingRoot: Boolean = true,
+    val isPrivacyActive: Boolean = false,
+    val logs: List<String> = emptyList(),
+    val isBusy: Boolean = false
+)
+
+class MainViewModel(
+    private val repository: PrivacyRepository,
+    private val stringProvider: StringProvider,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Main
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(MainUiState())
+    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+
+    // Custom scope since lifecycle-viewmodel-ktx is not available or we want to control dispatcher
+    private val viewModelScope = CoroutineScope(dispatcher + SupervisorJob())
+
+    init {
+        checkRoot()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.cancel()
+    }
+
+    fun checkRoot() {
+        log(stringProvider.getString(R.string.checking_root_access))
+        viewModelScope.launch {
+            val hasRoot = repository.isRootAvailable()
+            if (hasRoot) {
+                log(stringProvider.getString(R.string.root_access_granted))
+                _uiState.update { it.copy(isRootGranted = true, isCheckingRoot = false) }
+                checkPrivacyStatus()
+            } else {
+                log(stringProvider.getString(R.string.root_access_denied))
+                _uiState.update { it.copy(isRootGranted = false, isCheckingRoot = false) }
+            }
+        }
+    }
+
+    private fun checkPrivacyStatus() {
+        viewModelScope.launch {
+            val isActive = repository.isPrivacyModeEnabled()
+            _uiState.update { it.copy(isPrivacyActive = isActive) }
+            if (isActive) {
+                log(stringProvider.getString(R.string.privacy_mode_detected_active))
+            }
+        }
+    }
+
+    fun togglePrivacy() {
+        if (_uiState.value.isBusy) return
+
+        if (_uiState.value.isPrivacyActive) {
+            disablePrivacy()
+        } else {
+            enablePrivacy()
+        }
+    }
+
+    private fun enablePrivacy() {
+        log(stringProvider.getString(R.string.activating_privacy_mode))
+        _uiState.update { it.copy(isBusy = true) }
+
+        viewModelScope.launch {
+            val result = repository.enablePrivacyMode()
+            log(result)
+            if (!result.startsWith("Error")) {
+                _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
+            } else {
+                log(stringProvider.getString(R.string.failed_to_activate))
+                _uiState.update { it.copy(isBusy = false) }
+            }
+        }
+    }
+
+    private fun disablePrivacy() {
+        log(stringProvider.getString(R.string.deactivating_privacy_mode))
+        _uiState.update { it.copy(isBusy = true) }
+
+        viewModelScope.launch {
+            val result = repository.disablePrivacyMode()
+            log(result)
+            if (!result.startsWith("Error")) {
+                _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
+            } else {
+                log(stringProvider.getString(R.string.failed_to_deactivate))
+                _uiState.update { it.copy(isBusy = false) }
+            }
+        }
+    }
+
+    private fun log(message: String) {
+        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val logEntry = "[$timestamp] $message"
+        _uiState.update { it.copy(logs = it.logs + logEntry) }
+    }
+}
+
+class MainViewModelFactory(
+    private val repository: PrivacyRepository,
+    private val stringProvider: StringProvider
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MainViewModel(repository, stringProvider) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
