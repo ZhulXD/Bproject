@@ -5,6 +5,8 @@ import java.io.IOException
 
 object RootUtil {
 
+    private const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
+
     fun execute(command: String): String {
         return try {
             val process = Runtime.getRuntime().exec("su")
@@ -40,15 +42,16 @@ object RootUtil {
         val dnsMode = execute("settings get global private_dns_mode").trim()
         val dnsSpecifier = execute("settings get global private_dns_specifier").trim()
 
-        return dnsMode == "hostname" && dnsSpecifier == "a4f5f2.dns.nextdns.io"
+        return dnsMode == "hostname" && dnsSpecifier == NEXTDNS_ID
     }
 
     // Commands to enable Privacy Mode
-    fun enablePrivacyMode(tempDir: String): String {
+    // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
+    fun enablePrivacyMode(tempDir: String = "/data/local/tmp/filtered_certs"): String {
         val script = """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
-            settings put global private_dns_specifier a4f5f2.dns.nextdns.io
+            settings put global private_dns_specifier $NEXTDNS_ID
 
             # 2. Disable Certificates (Safe Mount Method)
             # Create a clean temp directory
@@ -83,7 +86,7 @@ object RootUtil {
         return execute(script)
     }
 
-    fun getDisablePrivacyScript(): String {
+    fun getDisablePrivacyScript(tempDir: String = "/data/local/tmp/filtered_certs"): String {
         return """
             # 1. Reset DNS
             settings put global private_dns_mode off
@@ -104,7 +107,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    fun disablePrivacyMode(): String {
-        return execute(getDisablePrivacyScript())
+    fun disablePrivacyMode(tempDir: String = "/data/local/tmp/filtered_certs"): String {
+        return execute(getDisablePrivacyScript(tempDir))
     }
 }
