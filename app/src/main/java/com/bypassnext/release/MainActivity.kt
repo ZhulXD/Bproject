@@ -21,6 +21,10 @@ class MainActivity : AppCompatActivity() {
     private val PREFS_NAME = "BypassNextPrefs"
     private val KEY_NEXTDNS_ID = "nextdns_id"
 
+    private val logDateFormat by lazy {
+        SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -121,5 +125,11 @@ class MainActivity : AppCompatActivity() {
             tvCertStatus.text = getString(R.string.system_default)
             tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
+    }
+
+    private fun log(message: String) {
+        val timestamp = logDateFormat.format(Date())
+        tvLog.append("\n> [$timestamp] $message")
+        // Auto scroll could be added here
     }
 }
