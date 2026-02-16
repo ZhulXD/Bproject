@@ -55,14 +55,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkPrivacyStatus() {
-        lifecycleScope.launch {
-            val isActive = RootUtil.isPrivacyModeEnabled()
-            isPrivacyActive = isActive
-            updateUIState()
-            if (isActive) {
-                log("Privacy Mode detected: ACTIVE")
-            }
+    private suspend fun checkPrivacyStatus() {
+        // Run directly in the caller's scope (which is already lifecycle-aware)
+        // RootUtil.isPrivacyModeEnabled() is suspend and handles its own dispatching (IO)
+        val isActive = RootUtil.isPrivacyModeEnabled()
+        isPrivacyActive = isActive
+        updateUIState()
+        if (isActive) {
+            log("Privacy Mode detected: ACTIVE")
         }
     }
 

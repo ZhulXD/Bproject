@@ -4,12 +4,15 @@ import java.io.DataOutputStream
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
 
-object RootUtil {
+interface ShellExecutor {
+    suspend fun execute(command: String): String
+}
 
-    private const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
-
-    suspend fun execute(command: String): String = withContext(Dispatchers.IO) {
+class DefaultShellExecutor : ShellExecutor {
+    override suspend fun execute(command: String): String = withContext(Dispatchers.IO) {
         try {
             val process = Runtime.getRuntime().exec("su")
             val os = DataOutputStream(process.outputStream)
@@ -28,6 +31,15 @@ object RootUtil {
             "Error: ${e.message}"
         }
     }
+}
+
+object RootUtil {
+
+    var shellExecutor: ShellExecutor = DefaultShellExecutor()
+
+    private const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
+
+    suspend fun execute(command: String): String = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -39,12 +51,12 @@ object RootUtil {
         }
     }
 
-    suspend fun isPrivacyModeEnabled(): Boolean {
-        // Check DNS settings
-        val dnsMode = execute("settings get global private_dns_mode").trim()
-        val dnsSpecifier = execute("settings get global private_dns_specifier").trim()
+    suspend fun isPrivacyModeEnabled(): Boolean = coroutineScope {
+        // Check DNS settings in parallel
+        val dnsModeDeferred = async { execute("settings get global private_dns_mode").trim() }
+        val dnsSpecifierDeferred = async { execute("settings get global private_dns_specifier").trim() }
 
-        return checkPrivacyStatus(dnsMode, dnsSpecifier)
+        checkPrivacyStatus(dnsModeDeferred.await(), dnsSpecifierDeferred.await())
     }
 
     fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String): Boolean {
