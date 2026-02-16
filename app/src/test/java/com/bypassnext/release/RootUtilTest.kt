@@ -100,15 +100,16 @@ class RootUtilTest {
     }
 
     @Test
-    fun testEnablePrivacyMode_DefaultDir() = runTest {
-        RootUtil.enablePrivacyMode()
+    fun testEnablePrivacyMode_WithDir() = runTest {
+        val tempDir = "/data/local/tmp/filtered_certs"
+        RootUtil.enablePrivacyMode(tempDir)
 
         val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
         assertTrue("Script should enable private_dns_mode", executedScript.contains("settings put global private_dns_mode hostname"))
         assertTrue("Script should set private_dns_specifier", executedScript.contains("settings put global private_dns_specifier a4f5f2.dns.nextdns.io"))
         assertTrue("Script should create temp directory", executedScript.contains("mkdir -p"))
         assertTrue("Script should mount bind", executedScript.contains("mount -o bind"))
-        assertTrue("Script should use default temp dir", executedScript.contains("TEMP_DIR=\"/data/local/tmp/filtered_certs\""))
+        assertTrue("Script should use provided temp dir", executedScript.contains("TEMP_DIR=\"$tempDir\""))
     }
 
     @Test
@@ -123,7 +124,8 @@ class RootUtilTest {
 
     @Test
     fun testDisablePrivacyMode() = runTest {
-        RootUtil.disablePrivacyMode()
+        val tempDir = "/data/local/tmp/filtered_certs"
+        RootUtil.disablePrivacyMode(tempDir)
 
         val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
         assertTrue("Script should reset private_dns_mode", executedScript.contains("settings put global private_dns_mode off"))
