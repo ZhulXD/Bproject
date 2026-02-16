@@ -174,4 +174,16 @@ class RootUtilTest {
 
         assertFalse("Should return false when specifier is wrong", RootUtil.isPrivacyModeEnabled(testId))
     }
+
+    @Test
+    fun testIsRootAvailable_True() = runTest {
+        mockShellExecutor.commandResponses["id"] = "uid=0(root) gid=0(root) groups=0(root)"
+        assertTrue("Should return true when id command succeeds", RootUtil.isRootAvailable())
+    }
+
+    @Test
+    fun testIsRootAvailable_False() = runTest {
+        mockShellExecutor.commandResponses["id"] = "Error: su denied"
+        assertFalse("Should return false when id command returns error", RootUtil.isRootAvailable())
+    }
 }

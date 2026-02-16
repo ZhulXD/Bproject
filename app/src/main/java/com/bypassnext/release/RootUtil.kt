@@ -43,9 +43,8 @@ object RootUtil {
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val p = Runtime.getRuntime().exec("su -c id")
-            p.waitFor()
-            p.exitValue() == 0
+            val output = execute("id")
+            !output.startsWith("Error")
         } catch (e: Exception) {
             false
         }
