@@ -37,6 +37,20 @@ class RootUtilTest {
     }
 
     @Test
+    fun testGetEnablePrivacyScript() {
+        val tempDir = "/data/local/tmp/filtered_certs"
+        val script = RootUtil.getEnablePrivacyScript(tempDir)
+
+        // Verify key commands are present in the script
+        assertTrue("Script should set private_dns_mode", script.contains("settings put global private_dns_mode hostname"))
+        assertTrue("Script should set private_dns_specifier", script.contains("settings put global private_dns_specifier ${RootUtil.NEXTDNS_ID}"))
+        assertTrue("Script should set TEMP_DIR", script.contains("TEMP_DIR=\"$tempDir\""))
+        assertTrue("Script should create temp directory", script.contains("mkdir -p \"\$TEMP_DIR\""))
+        assertTrue("Script should mount bind", script.contains("mount -o bind"))
+        assertTrue("Script should include a success message", script.contains("Privacy Mode Activated"))
+    }
+
+    @Test
     fun testGetDisablePrivacyScript() {
         val tempDir = "/data/local/tmp/filtered_certs"
         val script = RootUtil.getDisablePrivacyScript(tempDir)
@@ -53,7 +67,7 @@ class RootUtilTest {
     @Test
     fun testCheckPrivacyStatus_Enabled() {
         val dnsMode = "hostname"
-        val dnsSpecifier = "a4f5f2.dns.nextdns.io"
+        val dnsSpecifier = RootUtil.NEXTDNS_ID
         assertTrue("Should return true when DNS mode is hostname and specifier matches NextDNS ID",
             RootUtil.checkPrivacyStatus(dnsMode, dnsSpecifier))
     }
@@ -69,7 +83,7 @@ class RootUtilTest {
     @Test
     fun testCheckPrivacyStatus_WrongMode() {
         val dnsMode = "private"
-        val dnsSpecifier = "a4f5f2.dns.nextdns.io"
+        val dnsSpecifier = RootUtil.NEXTDNS_ID
         assertFalse("Should return false when DNS mode is not hostname",
             RootUtil.checkPrivacyStatus(dnsMode, dnsSpecifier))
     }
@@ -94,7 +108,7 @@ class RootUtilTest {
         // so checkPrivacyStatus expects exact matches.
         // If we pass whitespace, it should fail.
         val dnsMode = "hostname "
-        val dnsSpecifier = "a4f5f2.dns.nextdns.io"
+        val dnsSpecifier = RootUtil.NEXTDNS_ID
         assertFalse("Should return false if inputs contain whitespace (caller trims)",
             RootUtil.checkPrivacyStatus(dnsMode, dnsSpecifier))
     }
@@ -106,7 +120,7 @@ class RootUtilTest {
 
         val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
         assertTrue("Script should enable private_dns_mode", executedScript.contains("settings put global private_dns_mode hostname"))
-        assertTrue("Script should set private_dns_specifier", executedScript.contains("settings put global private_dns_specifier a4f5f2.dns.nextdns.io"))
+        assertTrue("Script should set private_dns_specifier", executedScript.contains("settings put global private_dns_specifier ${RootUtil.NEXTDNS_ID}"))
         assertTrue("Script should create temp directory", executedScript.contains("mkdir -p"))
         assertTrue("Script should mount bind", executedScript.contains("mount -o bind"))
         assertTrue("Script should use provided temp dir", executedScript.contains("TEMP_DIR=\"$tempDir\""))
@@ -136,7 +150,7 @@ class RootUtilTest {
     @Test
     fun testIsPrivacyModeEnabled_True() = runTest {
         mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "hostname"
-        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = "a4f5f2.dns.nextdns.io"
+        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = RootUtil.NEXTDNS_ID
 
         assertTrue("Should return true when settings are correct", RootUtil.isPrivacyModeEnabled())
     }
@@ -144,7 +158,7 @@ class RootUtilTest {
     @Test
     fun testIsPrivacyModeEnabled_False_WrongMode() = runTest {
         mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "off"
-        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = "a4f5f2.dns.nextdns.io"
+        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = RootUtil.NEXTDNS_ID
 
         assertFalse("Should return false when mode is off", RootUtil.isPrivacyModeEnabled())
     }

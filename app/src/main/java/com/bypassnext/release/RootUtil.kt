@@ -99,8 +99,12 @@ object RootUtil {
 
             echo "Privacy Mode Activated: DNS set to NextDNS, Certificates filtered."
         """.trimIndent()
+    }
 
-        return execute(script)
+    // Commands to enable Privacy Mode
+    // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
+    suspend fun enablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+        return execute(getEnablePrivacyScript(tempDir))
     }
 
     fun getDisablePrivacyScript(tempDir: String): String {
