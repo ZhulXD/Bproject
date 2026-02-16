@@ -42,6 +42,10 @@ object RootUtil {
         val dnsMode = execute("settings get global private_dns_mode").trim()
         val dnsSpecifier = execute("settings get global private_dns_specifier").trim()
 
+        return checkPrivacyStatus(dnsMode, dnsSpecifier)
+    }
+
+    fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String): Boolean {
         return dnsMode == "hostname" && dnsSpecifier == NEXTDNS_ID
     }
 
