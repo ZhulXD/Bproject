@@ -86,9 +86,8 @@ object RootUtil {
         return execute(script)
     }
 
-    // Commands to disable Privacy Mode (Revert)
-    fun disablePrivacyMode(): String {
-        val script = """
+    fun getDisablePrivacyScript(): String {
+        return """
             # 1. Reset DNS
             settings put global private_dns_mode off
             settings delete global private_dns_specifier
@@ -105,7 +104,10 @@ object RootUtil {
 
             echo "Privacy Mode Deactivated: DNS reset, System Certificates restored."
         """.trimIndent()
+    }
 
-        return execute(script)
+    // Commands to disable Privacy Mode (Revert)
+    fun disablePrivacyMode(): String {
+        return execute(getDisablePrivacyScript())
     }
 }
