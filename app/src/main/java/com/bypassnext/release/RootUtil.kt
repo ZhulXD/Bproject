@@ -44,7 +44,7 @@ object RootUtil {
     }
 
     // Commands to enable Privacy Mode
-    fun enablePrivacyMode(): String {
+    fun enablePrivacyMode(tempDir: String): String {
         val script = """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
@@ -52,10 +52,10 @@ object RootUtil {
 
             # 2. Disable Certificates (Safe Mount Method)
             # Create a clean temp directory
-            TEMP_DIR="/data/local/tmp/filtered_certs"
-            rm -rf ${'$'}TEMP_DIR
-            mkdir -p ${'$'}TEMP_DIR
-            chmod 755 ${'$'}TEMP_DIR
+            TEMP_DIR="$tempDir"
+            rm -rf "${'$'}TEMP_DIR"
+            mkdir -p "${'$'}TEMP_DIR"
+            chmod 755 "${'$'}TEMP_DIR"
 
             # Identify source directory (Android version dependent)
             if [ -d "/apex/com.android.conscrypt/cacerts" ]; then
@@ -65,17 +65,17 @@ object RootUtil {
             fi
 
             # Copy all certs
-            cp ${'$'}SRC_DIR/* ${'$'}TEMP_DIR/
+            cp ${'$'}SRC_DIR/* "${'$'}TEMP_DIR/"
 
             # Filter out the blocked ones (Digicert, GlobalSign, SSL) based on content
             # Note: Using grep on binary files can be tricky, assuming ASCII text exists inside PEM
-            grep -l "Digicert" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
-            grep -l "DigiCert" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
-            grep -l "GlobalSign" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
-            grep -l "SSL" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
+            grep -l "Digicert" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
+            grep -l "DigiCert" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
+            grep -l "GlobalSign" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
+            grep -l "SSL" "${'$'}TEMP_DIR/"* | xargs rm 2>/dev/null
 
             # Mount the filtered directory over the system one
-            mount -o bind ${'$'}TEMP_DIR ${'$'}SRC_DIR
+            mount -o bind "${'$'}TEMP_DIR" "${'$'}SRC_DIR"
 
             # Restart networking to apply DNS (optional/gentle)
             # svc wifi disable; svc wifi enable
@@ -87,7 +87,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    fun disablePrivacyMode(): String {
+    fun disablePrivacyMode(tempDir: String): String {
         val script = """
             # 1. Reset DNS
             settings put global private_dns_mode off
@@ -101,7 +101,7 @@ object RootUtil {
             fi
 
             # Clean up temp
-            rm -rf /data/local/tmp/filtered_certs
+            rm -rf "$tempDir"
 
             echo "Privacy Mode Deactivated: DNS reset, System Certificates restored."
         """.trimIndent()

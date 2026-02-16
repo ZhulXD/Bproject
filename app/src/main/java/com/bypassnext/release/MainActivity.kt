@@ -5,6 +5,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -72,8 +73,10 @@ class MainActivity : AppCompatActivity() {
         log("Activating Privacy Mode...")
         btnToggle.isEnabled = false // Prevent double clicks
 
+        val tempDir = File(cacheDir, "filtered_certs").absolutePath
+
         Thread {
-            val result = RootUtil.enablePrivacyMode()
+            val result = RootUtil.enablePrivacyMode(tempDir)
             runOnUiThread {
                 log(result)
                 if (!result.startsWith("Error")) {
@@ -91,8 +94,10 @@ class MainActivity : AppCompatActivity() {
         log("Deactivating Privacy Mode...")
         btnToggle.isEnabled = false
 
+        val tempDir = File(cacheDir, "filtered_certs").absolutePath
+
         Thread {
-            val result = RootUtil.disablePrivacyMode()
+            val result = RootUtil.disablePrivacyMode(tempDir)
             runOnUiThread {
                 log(result)
                 if (!result.startsWith("Error")) {
