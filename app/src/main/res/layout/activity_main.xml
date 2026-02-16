@@ -63,6 +63,20 @@
                 android:fontFamily="monospace"
                 android:textSize="12sp"/>
 
+            <EditText
+                android:id="@+id/etNextDnsId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#222222"
+                android:fontFamily="monospace"
+                android:hint="@string/hint_nextdns_id"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#444444"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp"
+                android:padding="8dp"
+                android:inputType="textNoSuggestions" />
+
             <TextView
                 android:id="@+id/tvDnsStatus"
                 android:layout_width="wrap_content"
@@ -71,7 +85,7 @@
                 android:textColor="#FFFFFF"
                 android:fontFamily="monospace"
                 android:textSize="16sp"
-                android:layout_marginTop="4dp"/>
+                android:layout_marginTop="8dp"/>
         </LinearLayout>
 
         <!-- Certs Card -->
