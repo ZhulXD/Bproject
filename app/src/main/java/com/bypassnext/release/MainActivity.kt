@@ -71,7 +71,8 @@ class MainActivity : AppCompatActivity() {
         btnToggle.isEnabled = false // Prevent double clicks
 
         lifecycleScope.launch {
-            val result = RootUtil.enablePrivacyMode()
+            val certsDir = "${cacheDir.absolutePath}/filtered_certs"
+            val result = RootUtil.enablePrivacyMode(certsDir)
             log(result)
             if (!result.startsWith("Error")) {
                 isPrivacyActive = true
@@ -88,7 +89,8 @@ class MainActivity : AppCompatActivity() {
         btnToggle.isEnabled = false
 
         lifecycleScope.launch {
-            val result = RootUtil.disablePrivacyMode()
+            val certsDir = "${cacheDir.absolutePath}/filtered_certs"
+            val result = RootUtil.disablePrivacyMode(certsDir)
             log(result)
             if (!result.startsWith("Error")) {
                 isPrivacyActive = false
