@@ -10,7 +10,7 @@
     <string name="deactivating_privacy_mode">Deactivating Privacy Mode…</string>
     <string name="failed_to_deactivate">Failed to deactivate.</string>
     <string name="status_active">ACTIVE</string>
-    <string name="dns_nextdns">a4f5f2.dns.nextdns.io</string>
+    <string name="hint_nextdns_id">NextDNS Configuration ID</string>
     <string name="cert_blocked">Blocked: Digicert, GlobalSign, SSL</string>
     <string name="status_inactive">INACTIVE</string>
     <string name="system_default">System Default</string>

@@ -37,40 +37,38 @@ object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
 
-    private const val NEXTDNS_ID = "a4f5f2.dns.nextdns.io"
     private const val DEFAULT_TEMP_DIR = "/data/local/tmp/filtered_certs"
 
     suspend fun execute(command: String): String = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val p = Runtime.getRuntime().exec("su -c id")
-            p.waitFor()
-            p.exitValue() == 0
+            val output = execute("id")
+            !output.startsWith("Error")
         } catch (e: Exception) {
             false
         }
     }
 
-    suspend fun isPrivacyModeEnabled(): Boolean = coroutineScope {
+    suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = coroutineScope {
         // Check DNS settings in parallel
         val dnsModeDeferred = async { execute("settings get global private_dns_mode").trim() }
         val dnsSpecifierDeferred = async { execute("settings get global private_dns_specifier").trim() }
 
-        checkPrivacyStatus(dnsModeDeferred.await(), dnsSpecifierDeferred.await())
+        checkPrivacyStatus(dnsModeDeferred.await(), dnsSpecifierDeferred.await(), nextDnsId)
     }
 
-    fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String): Boolean {
-        return dnsMode == "hostname" && dnsSpecifier == NEXTDNS_ID
+    fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String, expectedNextDnsId: String): Boolean {
+        return dnsMode == "hostname" && dnsSpecifier == expectedNextDnsId
     }
 
     // Commands to enable Privacy Mode
     // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
-    suspend fun enablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String = DEFAULT_TEMP_DIR): String {
         val script = """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
-            settings put global private_dns_specifier $NEXTDNS_ID
+            settings put global private_dns_specifier $nextDnsId
 
             # 2. Disable Certificates (Safe Mount Method)
             # Create a clean temp directory
@@ -101,11 +99,15 @@ object RootUtil {
 
             echo "Privacy Mode Activated: DNS set to NextDNS, Certificates filtered."
         """.trimIndent()
-
-        return execute(script)
     }
 
-    fun getDisablePrivacyScript(tempDir: String = DEFAULT_TEMP_DIR): String {
+    // Commands to enable Privacy Mode
+    // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
+    suspend fun enablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+        return execute(getEnablePrivacyScript(tempDir))
+    }
+
+    fun getDisablePrivacyScript(tempDir: String): String {
         return """
             # 1. Reset DNS
             settings put global private_dns_mode off
@@ -126,7 +128,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    suspend fun disablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun disablePrivacyMode(tempDir: String): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }
