@@ -8,10 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnToggle: Button
@@ -20,7 +16,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvLog: TextView
     private lateinit var etNextDnsId: EditText
 
-    private var isPrivacyActive = false
+    private lateinit var viewModel: MainViewModel
 
     private val PREFS_NAME = "BypassNextPrefs"
     private val KEY_NEXTDNS_ID = "nextdns_id"
@@ -40,28 +36,16 @@ class MainActivity : AppCompatActivity() {
         val savedId = prefs.getString(KEY_NEXTDNS_ID, "")
         etNextDnsId.setText(savedId)
 
-        checkRoot()
+        val factory = MainViewModelFactory(DefaultPrivacyRepository(), AndroidStringProvider(this))
+        viewModel = androidx.lifecycle.ViewModelProvider(this, factory)[MainViewModel::class.java]
 
         btnToggle.setOnClickListener {
-            if (isPrivacyActive) {
-                disablePrivacy()
-            } else {
-                enablePrivacy()
-            }
+            viewModel.togglePrivacy()
         }
-    }
 
-    private fun checkRoot() {
-        log(getString(R.string.checking_root_access))
         lifecycleScope.launch {
-            val hasRoot = RootUtil.isRootAvailable()
-            if (hasRoot) {
-                log(getString(R.string.root_access_granted))
-                checkPrivacyStatus()
-            } else {
-                log(getString(R.string.root_access_denied))
-                btnToggle.isEnabled = false
-                btnToggle.text = getString(R.string.no_root)
+            viewModel.uiState.collect { state ->
+                render(state)
             }
         }
     }
@@ -100,24 +84,15 @@ class MainActivity : AppCompatActivity() {
                 isPrivacyActive = true
                 updateUIState()
             } else {
-                log(getString(R.string.failed_to_activate))
-            }
-            btnToggle.isEnabled = true
-        }
-    }
+                btnToggle.text = getString(R.string.status_inactive)
+                btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
+                btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
 
-    private fun disablePrivacy() {
-        log(getString(R.string.deactivating_privacy_mode))
-        btnToggle.isEnabled = false
+                tvDnsStatus.text = getString(R.string.system_default)
+                tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
 
-        lifecycleScope.launch {
-            val result = RootUtil.disablePrivacyMode()
-            log(result)
-            if (!result.startsWith("Error")) {
-                isPrivacyActive = false
-                updateUIState()
-            } else {
-                log(getString(R.string.failed_to_deactivate))
+                tvCertStatus.text = getString(R.string.system_default)
+                tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
             }
             btnToggle.isEnabled = true
         }
@@ -146,11 +121,5 @@ class MainActivity : AppCompatActivity() {
             tvCertStatus.text = getString(R.string.system_default)
             tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
-    }
-
-    private fun log(message: String) {
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        tvLog.append("\n> [$timestamp] $message")
-        // Auto scroll could be added here
     }
 }
