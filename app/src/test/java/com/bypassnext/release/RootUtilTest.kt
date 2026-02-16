@@ -1,10 +1,40 @@
 package com.bypassnext.release
 
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
+class TestMockShellExecutor : ShellExecutor {
+    val executedCommands = mutableListOf<String>()
+    val commandResponses = mutableMapOf<String, String>()
+
+    override suspend fun execute(command: String): String {
+        executedCommands.add(command)
+        // Find a matching response or return empty string
+        // Check for exact match first, then check if key is contained in command
+        return commandResponses[command] ?: commandResponses.entries.find { command.contains(it.key) }?.value ?: ""
+    }
+}
+
 class RootUtilTest {
+
+    private lateinit var mockShellExecutor: TestMockShellExecutor
+    private lateinit var originalShellExecutor: ShellExecutor
+
+    @Before
+    fun setUp() {
+        originalShellExecutor = RootUtil.shellExecutor
+        mockShellExecutor = TestMockShellExecutor()
+        RootUtil.shellExecutor = mockShellExecutor
+    }
+
+    @After
+    fun tearDown() {
+        RootUtil.shellExecutor = originalShellExecutor
+    }
 
     @Test
     fun testGetDisablePrivacyScript() {
@@ -67,5 +97,61 @@ class RootUtilTest {
         val dnsSpecifier = "a4f5f2.dns.nextdns.io"
         assertFalse("Should return false if inputs contain whitespace (caller trims)",
             RootUtil.checkPrivacyStatus(dnsMode, dnsSpecifier))
+    }
+
+    @Test
+    fun testEnablePrivacyMode_DefaultDir() = runTest {
+        RootUtil.enablePrivacyMode()
+
+        val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
+        assertTrue("Script should enable private_dns_mode", executedScript.contains("settings put global private_dns_mode hostname"))
+        assertTrue("Script should set private_dns_specifier", executedScript.contains("settings put global private_dns_specifier a4f5f2.dns.nextdns.io"))
+        assertTrue("Script should create temp directory", executedScript.contains("mkdir -p"))
+        assertTrue("Script should mount bind", executedScript.contains("mount -o bind"))
+        assertTrue("Script should use default temp dir", executedScript.contains("TEMP_DIR=\"/data/local/tmp/filtered_certs\""))
+    }
+
+    @Test
+    fun testEnablePrivacyMode_CustomDir() = runTest {
+        val customDir = "/data/local/tmp/custom_certs"
+        RootUtil.enablePrivacyMode(customDir)
+
+        val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
+        assertTrue("Script should use custom temp dir", executedScript.contains("TEMP_DIR=\"$customDir\""))
+        assertTrue("Script should remove custom temp dir before creating", executedScript.contains("rm -rf \"\$TEMP_DIR\""))
+    }
+
+    @Test
+    fun testDisablePrivacyMode() = runTest {
+        RootUtil.disablePrivacyMode()
+
+        val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
+        assertTrue("Script should reset private_dns_mode", executedScript.contains("settings put global private_dns_mode off"))
+        assertTrue("Script should delete private_dns_specifier", executedScript.contains("settings delete global private_dns_specifier"))
+        assertTrue("Script should unmount certificates", executedScript.contains("umount"))
+    }
+
+    @Test
+    fun testIsPrivacyModeEnabled_True() = runTest {
+        mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "hostname"
+        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = "a4f5f2.dns.nextdns.io"
+
+        assertTrue("Should return true when settings are correct", RootUtil.isPrivacyModeEnabled())
+    }
+
+    @Test
+    fun testIsPrivacyModeEnabled_False_WrongMode() = runTest {
+        mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "off"
+        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = "a4f5f2.dns.nextdns.io"
+
+        assertFalse("Should return false when mode is off", RootUtil.isPrivacyModeEnabled())
+    }
+
+    @Test
+    fun testIsPrivacyModeEnabled_False_WrongSpecifier() = runTest {
+        mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "hostname"
+        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = "wrong.dns"
+
+        assertFalse("Should return false when specifier is wrong", RootUtil.isPrivacyModeEnabled())
     }
 }
