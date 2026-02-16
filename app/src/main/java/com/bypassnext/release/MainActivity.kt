@@ -5,6 +5,10 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -40,70 +44,70 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkRoot() {
         log("Checking root access...")
-        Thread {
-            val hasRoot = RootUtil.isRootAvailable()
-            runOnUiThread {
-                if (hasRoot) {
-                    log("Root access GRANTED.")
-                    checkPrivacyStatus()
-                } else {
-                    log("Root access DENIED. App will not function.")
-                    btnToggle.isEnabled = false
-                    btnToggle.text = "NO ROOT"
-                }
+        lifecycleScope.launch {
+            val hasRoot = withContext(Dispatchers.IO) {
+                RootUtil.isRootAvailable()
             }
-        }.start()
+            if (hasRoot) {
+                log("Root access GRANTED.")
+                checkPrivacyStatus()
+            } else {
+                log("Root access DENIED. App will not function.")
+                btnToggle.isEnabled = false
+                btnToggle.text = "NO ROOT"
+            }
+        }
     }
 
     private fun checkPrivacyStatus() {
-        Thread {
-            val isActive = RootUtil.isPrivacyModeEnabled()
-            runOnUiThread {
-                isPrivacyActive = isActive
-                updateUIState()
-                if (isActive) {
-                    log("Privacy Mode detected: ACTIVE")
-                }
+        lifecycleScope.launch {
+            val isActive = withContext(Dispatchers.IO) {
+                RootUtil.isPrivacyModeEnabled()
             }
-        }.start()
+            isPrivacyActive = isActive
+            updateUIState()
+            if (isActive) {
+                log("Privacy Mode detected: ACTIVE")
+            }
+        }
     }
 
     private fun enablePrivacy() {
         log("Activating Privacy Mode...")
         btnToggle.isEnabled = false // Prevent double clicks
 
-        Thread {
-            val result = RootUtil.enablePrivacyMode()
-            runOnUiThread {
-                log(result)
-                if (!result.startsWith("Error")) {
-                    isPrivacyActive = true
-                    updateUIState()
-                } else {
-                    log("Failed to activate.")
-                }
-                btnToggle.isEnabled = true
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                RootUtil.enablePrivacyMode()
             }
-        }.start()
+            log(result)
+            if (!result.startsWith("Error")) {
+                isPrivacyActive = true
+                updateUIState()
+            } else {
+                log("Failed to activate.")
+            }
+            btnToggle.isEnabled = true
+        }
     }
 
     private fun disablePrivacy() {
         log("Deactivating Privacy Mode...")
         btnToggle.isEnabled = false
 
-        Thread {
-            val result = RootUtil.disablePrivacyMode()
-            runOnUiThread {
-                log(result)
-                if (!result.startsWith("Error")) {
-                    isPrivacyActive = false
-                    updateUIState()
-                } else {
-                    log("Failed to deactivate.")
-                }
-                btnToggle.isEnabled = true
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                RootUtil.disablePrivacyMode()
             }
-        }.start()
+            log(result)
+            if (!result.startsWith("Error")) {
+                isPrivacyActive = false
+                updateUIState()
+            } else {
+                log("Failed to deactivate.")
+            }
+            btnToggle.isEnabled = true
+        }
     }
 
     private fun updateUIState() {
