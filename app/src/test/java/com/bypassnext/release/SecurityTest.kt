@@ -59,7 +59,7 @@ class SecurityTest {
 
     @Test
     fun testEnablePrivacyModeValidation() = runTest {
-        val result = RootUtil.enablePrivacyMode("abc; reboot")
+        val result = RootUtil.enablePrivacyMode("abc; reboot", "/tmp/test")
         assertTrue("Should return error for invalid ID", result == "Error: Invalid NextDNS ID")
     }
 }
