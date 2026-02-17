@@ -143,7 +143,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    suspend fun disablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun disablePrivacyMode(tempDir: String): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }
