@@ -1,6 +1,11 @@
 package com.bypassnext.release
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Before
@@ -14,9 +19,15 @@ class MainViewModelFactoryTest {
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
         repository = MockPrivacyRepository()
         stringProvider = MockStringProvider()
         factory = MainViewModelFactory(repository, stringProvider)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
