@@ -7,19 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-class TestMockShellExecutor : ShellExecutor {
-    val executedCommands = mutableListOf<String>()
-    val commandResponses = mutableMapOf<String, String>()
-    val commandsToThrow = mutableMapOf<String, Exception>()
-
-    override suspend fun execute(command: String): String {
-        executedCommands.add(command)
-        commandsToThrow[command]?.let { throw it }
-        // Find a matching response or return empty string
-        // Check for exact match first, then check if key is contained in command
-        return commandResponses[command] ?: commandResponses.entries.find { command.contains(it.key) }?.value ?: ""
-    }
-}
 
 class RootUtilTest {
 
