@@ -29,6 +29,7 @@ class MainViewModel(
     private val stringProvider: StringProvider,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Main
 ) : ViewModel() {
+    private val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -113,8 +114,11 @@ class MainViewModel(
         }
     }
 
+
     private fun log(message: String) {
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val timestamp = synchronized(dateFormat) {
+            dateFormat.format(Date())
+        }
         val logEntry = "[$timestamp] $message"
         _uiState.update { it.copy(logs = it.logs + logEntry) }
     }
