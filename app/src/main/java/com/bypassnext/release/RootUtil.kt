@@ -37,7 +37,6 @@ object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
 
-    private const val DEFAULT_TEMP_DIR = "/data/local/tmp/filtered_certs"
 
     private fun escapeShellArg(arg: String): String {
         return "'" + arg.replace("'", "'\\''") + "'"
@@ -118,8 +117,7 @@ object RootUtil {
     }
 
     // Commands to enable Privacy Mode
-    // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
-    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String {
         if (!isValidNextDnsId(nextDnsId)) {
             return "Error: Invalid NextDNS ID"
         }
