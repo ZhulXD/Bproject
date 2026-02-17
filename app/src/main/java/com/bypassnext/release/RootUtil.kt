@@ -37,8 +37,6 @@ object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
 
-    private const val DEFAULT_TEMP_DIR = "/data/local/tmp/filtered_certs"
-
     suspend fun execute(command: String): String = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
@@ -100,8 +98,7 @@ object RootUtil {
     }
 
     // Commands to enable Privacy Mode
-    // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
-    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String {
         return execute(getEnablePrivacyScript(nextDnsId, tempDir))
     }
 
@@ -126,7 +123,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    suspend fun disablePrivacyMode(tempDir: String = DEFAULT_TEMP_DIR): String {
+    suspend fun disablePrivacyMode(tempDir: String): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }
