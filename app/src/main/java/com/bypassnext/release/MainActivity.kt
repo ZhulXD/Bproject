@@ -76,6 +76,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun render(state: MainUiState) {
+        renderLogs(state)
+        renderPrivacyState(state)
+        renderBusyState(state)
+    }
+
+    private fun renderLogs(state: MainUiState) {
         // Log updates
         if (state.logs.size < lastRenderedLogCount) {
             // Logs were cleared or reset
@@ -103,7 +109,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
 
+    private fun renderPrivacyState(state: MainUiState) {
         // Update UI based on state
         etNextDnsId.isEnabled = !state.isPrivacyActive
         if (state.isPrivacyActive) {
@@ -128,7 +136,9 @@ class MainActivity : AppCompatActivity() {
             tvCertStatus.text = getString(R.string.system_default)
             tvCertStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
         }
+    }
 
+    private fun renderBusyState(state: MainUiState) {
         // Handle busy state
         btnToggle.isEnabled = !state.isBusy
     }
