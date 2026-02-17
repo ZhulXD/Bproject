@@ -1,34 +1,81 @@
 package com.bypassnext.release
 
-import java.io.DataOutputStream
+import java.io.BufferedReader
+import java.io.BufferedWriter
 import java.io.IOException
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface ShellExecutor {
     suspend fun execute(command: String): String
 }
 
 class DefaultShellExecutor : ShellExecutor {
-    override suspend fun execute(command: String): String = withContext(Dispatchers.IO) {
-        try {
-            val process = Runtime.getRuntime().exec("su")
-            val os = DataOutputStream(process.outputStream)
-            os.writeBytes(command + "\n")
-            os.writeBytes("exit\n")
-            os.flush()
-            process.waitFor()
+    private val mutex = Mutex()
+    private var process: Process? = null
+    private var writer: BufferedWriter? = null
+    private var reader: BufferedReader? = null
 
-            val output = process.inputStream.bufferedReader().readText()
-            val error = process.errorStream.bufferedReader().readText()
+    override suspend fun execute(command: String): String = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            try {
+                ensureProcess()
+                val token = UUID.randomUUID().toString()
+                val commandLine = "$command; echo \"$token $?\"\n"
 
-            if (process.exitValue() == 0) output else "Error: $error"
-        } catch (e: IOException) {
-            "Error: ${e.message}"
-        } catch (e: InterruptedException) {
-            "Error: ${e.message}"
+                writer?.write(commandLine)
+                writer?.flush()
+
+                val output = StringBuilder()
+                var line: String?
+                var exitCode = 0
+
+                while (reader?.readLine().also { line = it } != null) {
+                    if (line!!.contains(token)) {
+                        val parts = line!!.trim().split(" ")
+                        if (parts.size >= 2 && parts[parts.size - 2] == token) {
+                             exitCode = parts.last().toIntOrNull() ?: 0
+                             break
+                        }
+                    }
+                    output.append(line).append("\n")
+                }
+
+                if (line == null) {
+                    process = null
+                    throw IOException("Shell process died unexpectedly")
+                }
+
+                val result = output.toString().trim()
+                if (exitCode != 0) {
+                    "Error: Command failed with exit code $exitCode\n$result"
+                } else {
+                    result
+                }
+
+            } catch (e: Exception) {
+                try {
+                    process?.destroy()
+                } catch (ignore: Exception) {}
+                process = null
+                writer = null
+                reader = null
+                "Error: ${e.message}"
+            }
+        }
+    }
+
+    private fun ensureProcess() {
+        if (process?.isAlive != true) {
+            val pb = ProcessBuilder("su")
+            pb.redirectErrorStream(true)
+            process = pb.start()
+            writer = process!!.outputStream.bufferedWriter()
+            reader = process!!.inputStream.bufferedReader()
         }
     }
 }
@@ -43,7 +90,6 @@ object RootUtil {
     }
 
     fun isValidNextDnsId(nextDnsId: String): Boolean {
-        // NextDNS IDs are typically alphanumeric, possibly with hyphens or dots
         return nextDnsId.isNotEmpty() && nextDnsId.matches(Regex("^[a-zA-Z0-9.-]+$"))
     }
 
@@ -61,7 +107,6 @@ object RootUtil {
     suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = coroutineScope {
         if (!isValidNextDnsId(nextDnsId)) return@coroutineScope false
 
-        // Check DNS settings in a single shell execution to reduce process overhead
         val output = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
         val lines = output.trim().split("\n").map { it.trim() }
 
@@ -103,7 +148,6 @@ object RootUtil {
             cp ${'$'}SRC_DIR/* "${'$'}TEMP_DIR/"
 
             # Filter out the blocked ones (DigiCert, GlobalSign, SSL) based on content
-            # Note: Using grep on binary files can be tricky, assuming ASCII text exists inside PEM
             grep -El "Digi[Cc]ert|GlobalSign|SSL" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
 
             # Mount the filtered directory over the system one
@@ -116,7 +160,6 @@ object RootUtil {
         """.trimIndent()
     }
 
-    // Commands to enable Privacy Mode
     suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String {
         if (!isValidNextDnsId(nextDnsId)) {
             return "Error: Invalid NextDNS ID"
@@ -145,7 +188,6 @@ object RootUtil {
         """.trimIndent()
     }
 
-    // Commands to disable Privacy Mode (Revert)
     suspend fun disablePrivacyMode(tempDir: String): String {
         return execute(getDisablePrivacyScript(tempDir))
     }
