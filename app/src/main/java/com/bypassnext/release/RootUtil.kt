@@ -62,11 +62,16 @@ object RootUtil {
     suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = coroutineScope {
         if (!isValidNextDnsId(nextDnsId)) return@coroutineScope false
 
-        // Check DNS settings in parallel
-        val dnsModeDeferred = async { execute("settings get global private_dns_mode").trim() }
-        val dnsSpecifierDeferred = async { execute("settings get global private_dns_specifier").trim() }
+        // Check DNS settings in a single shell execution to reduce process overhead
+        val output = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
+        val lines = output.trim().split("\n").map { it.trim() }
 
-        checkPrivacyStatus(dnsModeDeferred.await(), dnsSpecifierDeferred.await(), nextDnsId)
+        if (lines.size < 2) return@coroutineScope false
+
+        val dnsMode = lines[0]
+        val dnsSpecifier = lines[1]
+
+        checkPrivacyStatus(dnsMode, dnsSpecifier, nextDnsId)
     }
 
     fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String, expectedNextDnsId: String): Boolean {
