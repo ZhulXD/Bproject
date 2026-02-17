@@ -11,71 +11,29 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 interface ShellExecutor {
-    suspend fun execute(command: String): String
+    suspend fun execute(command: String): Result<String>
 }
 
 class DefaultShellExecutor : ShellExecutor {
-    private val mutex = Mutex()
-    private var process: Process? = null
-    private var writer: BufferedWriter? = null
-    private var reader: BufferedReader? = null
+    override suspend fun execute(command: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val process = Runtime.getRuntime().exec("su")
+            val os = DataOutputStream(process.outputStream)
+            os.writeBytes(command + "\n")
+            os.writeBytes("exit\n")
+            os.flush()
+            process.waitFor()
 
-    override suspend fun execute(command: String): String = mutex.withLock {
-        withContext(Dispatchers.IO) {
-            try {
-                ensureProcess()
-                val token = UUID.randomUUID().toString()
-                val commandLine = "$command; echo \"$token $?\"\n"
+            val output = process.inputStream.bufferedReader().readText()
+            val error = process.errorStream.bufferedReader().readText()
 
-                writer?.write(commandLine)
-                writer?.flush()
-
-                val output = StringBuilder()
-                var line: String?
-                var exitCode = 0
-
-                while (reader?.readLine().also { line = it } != null) {
-                    if (line!!.contains(token)) {
-                        val parts = line!!.trim().split(" ")
-                        if (parts.size >= 2 && parts[parts.size - 2] == token) {
-                             exitCode = parts.last().toIntOrNull() ?: 0
-                             break
-                        }
-                    }
-                    output.append(line).append("\n")
-                }
-
-                if (line == null) {
-                    process = null
-                    throw IOException("Shell process died unexpectedly")
-                }
-
-                val result = output.toString().trim()
-                if (exitCode != 0) {
-                    "Error: Command failed with exit code $exitCode\n$result"
-                } else {
-                    result
-                }
-
-            } catch (e: Exception) {
-                try {
-                    process?.destroy()
-                } catch (ignore: Exception) {}
-                process = null
-                writer = null
-                reader = null
-                "Error: ${e.message}"
+            if (process.exitValue() == 0) {
+                Result.success(output)
+            } else {
+                Result.failure(Exception(error))
             }
-        }
-    }
-
-    private fun ensureProcess() {
-        if (process?.isAlive != true) {
-            val pb = ProcessBuilder("su")
-            pb.redirectErrorStream(true)
-            process = pb.start()
-            writer = process!!.outputStream.bufferedWriter()
-            reader = process!!.inputStream.bufferedReader()
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
@@ -93,21 +51,19 @@ object RootUtil {
         return nextDnsId.isNotEmpty() && nextDnsId.matches(Regex("^[a-zA-Z0-9.-]+$"))
     }
 
-    suspend fun execute(command: String): String = shellExecutor.execute(command)
+    suspend fun execute(command: String): Result<String> = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val output = execute("id")
-            !output.startsWith("Error")
-        } catch (e: Exception) {
-            false
-        }
+        execute("id").isSuccess
     }
 
     suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = coroutineScope {
         if (!isValidNextDnsId(nextDnsId)) return@coroutineScope false
 
-        val output = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
+        // Check DNS settings in a single shell execution to reduce process overhead
+        val result = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
+        val output = result.getOrNull() ?: return@coroutineScope false
+
         val lines = output.trim().split("\n").map { it.trim() }
 
         if (lines.size < 2) return@coroutineScope false
@@ -160,9 +116,10 @@ object RootUtil {
         """.trimIndent()
     }
 
-    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String {
+    // Commands to enable Privacy Mode
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): Result<String> {
         if (!isValidNextDnsId(nextDnsId)) {
-            return "Error: Invalid NextDNS ID"
+            return Result.failure(IllegalArgumentException("Invalid NextDNS ID"))
         }
         return execute(getEnablePrivacyScript(nextDnsId, tempDir))
     }
@@ -188,7 +145,8 @@ object RootUtil {
         """.trimIndent()
     }
 
-    suspend fun disablePrivacyMode(tempDir: String): String {
+    // Commands to disable Privacy Mode (Revert)
+    suspend fun disablePrivacyMode(tempDir: String): Result<String> {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }

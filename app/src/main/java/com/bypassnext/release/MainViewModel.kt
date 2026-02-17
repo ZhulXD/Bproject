@@ -90,12 +90,21 @@ class MainViewModel(
     }
 
     private fun enablePrivacy(nextDnsId: String, tempDir: String) {
-        performPrivacyAction(
-            startMessageRes = R.string.activating_privacy_mode,
-            action = { repository.enablePrivacyMode(nextDnsId, tempDir) },
-            targetState = true,
-            errorMessageRes = R.string.failed_to_activate
-        )
+        log(stringProvider.getString(R.string.activating_privacy_mode))
+        _uiState.update { it.copy(isBusy = true) }
+
+        viewModelScope.launch {
+            repository.enablePrivacyMode(nextDnsId, tempDir)
+                .onSuccess { output ->
+                    log(output)
+                    _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
+                }
+                .onFailure { error ->
+                    log("Error: ${error.message}")
+                    log(stringProvider.getString(R.string.failed_to_activate))
+                    _uiState.update { it.copy(isBusy = false) }
+                }
+        }
     }
 
     private fun disablePrivacy(tempDir: String) {
@@ -117,14 +126,16 @@ class MainViewModel(
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            val result = action()
-            log(result)
-            if (!result.startsWith("Error")) {
-                _uiState.update { it.copy(isPrivacyActive = targetState, isBusy = false) }
-            } else {
-                log(stringProvider.getString(errorMessageRes))
-                _uiState.update { it.copy(isBusy = false) }
-            }
+            repository.disablePrivacyMode(tempDir)
+                .onSuccess { output ->
+                    log(output)
+                    _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
+                }
+                .onFailure { error ->
+                    log("Error: ${error.message}")
+                    log(stringProvider.getString(R.string.failed_to_deactivate))
+                    _uiState.update { it.copy(isBusy = false) }
+                }
         }
     }
 

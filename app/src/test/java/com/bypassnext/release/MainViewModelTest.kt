@@ -110,7 +110,7 @@ class MainViewModelTest {
 
     @Test
     fun `togglePrivacy handles failure`() = runTest(testDispatcher) {
-        repository.enablePrivacyModeResponse = "Error: Failed"
+        repository.enablePrivacyModeResponse = Result.failure(Exception("Failed"))
         testScheduler.advanceUntilIdle()
 
         viewModel.togglePrivacy(TEST_DNS_ID, TEST_TEMP_DIR)
