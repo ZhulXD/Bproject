@@ -90,21 +90,12 @@ class MainViewModel(
     }
 
     private fun enablePrivacy(nextDnsId: String, tempDir: String) {
-        log(stringProvider.getString(R.string.activating_privacy_mode))
-        _uiState.update { it.copy(isBusy = true) }
-
-        viewModelScope.launch {
-            repository.enablePrivacyMode(nextDnsId, tempDir)
-                .onSuccess { output ->
-                    log(output)
-                    _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
-                }
-                .onFailure { error ->
-                    log("Error: ${error.message}")
-                    log(stringProvider.getString(R.string.failed_to_activate))
-                    _uiState.update { it.copy(isBusy = false) }
-                }
-        }
+        performPrivacyAction(
+            startMessageRes = R.string.activating_privacy_mode,
+            action = { repository.enablePrivacyMode(nextDnsId, tempDir) },
+            targetState = true,
+            errorMessageRes = R.string.failed_to_activate
+        )
     }
 
     private fun disablePrivacy(tempDir: String) {
@@ -118,7 +109,7 @@ class MainViewModel(
 
     private fun performPrivacyAction(
         startMessageRes: Int,
-        action: suspend () -> String,
+        action: suspend () -> Result<String>,
         targetState: Boolean,
         errorMessageRes: Int
     ) {
@@ -126,14 +117,14 @@ class MainViewModel(
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            repository.disablePrivacyMode(tempDir)
+            action()
                 .onSuccess { output ->
                     log(output)
-                    _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
+                    _uiState.update { it.copy(isPrivacyActive = targetState, isBusy = false) }
                 }
                 .onFailure { error ->
                     log("Error: ${error.message}")
-                    log(stringProvider.getString(R.string.failed_to_deactivate))
+                    log(stringProvider.getString(errorMessageRes))
                     _uiState.update { it.copy(isBusy = false) }
                 }
         }
@@ -143,14 +134,15 @@ class MainViewModel(
         val timestamp = dateFormat.get()!!.format(Date())
         val logEntry = "[$timestamp] $message"
 
-        val newLogs = synchronized(logBuffer) {
+        synchronized(logBuffer) {
             if (logBuffer.size >= MAX_LOG_SIZE) {
                 logBuffer.pollFirst()
             }
             logBuffer.addLast(logEntry)
-            ArrayList(logBuffer)
         }
 
+        // Optimize: Create new list only for update
+        val newLogs = synchronized(logBuffer) { ArrayList(logBuffer) }
         _uiState.update { it.copy(logs = newLogs) }
     }
 }
