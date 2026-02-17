@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -109,11 +110,7 @@ class MainActivity : AppCompatActivity() {
             btnToggle.text = getString(R.string.status_active)
             // Use try-catch or safe call if resources might be missing, but assume they exist
             btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
-            try {
-                btnToggle.setBackgroundResource(R.drawable.bg_circle_active)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to set active background resource", e)
-            }
+            btnToggle.safeSetBackgroundResource(R.drawable.bg_circle_active)
 
             tvDnsStatus.text = etNextDnsId.text.toString()
             tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
@@ -123,11 +120,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             btnToggle.text = getString(R.string.status_inactive)
             btnToggle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
-            try {
-                btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to set inactive background resource", e)
-            }
+            btnToggle.safeSetBackgroundResource(R.drawable.bg_circle_inactive)
 
             tvDnsStatus.text = getString(R.string.system_default)
             tvDnsStatus.setTextColor(ContextCompat.getColor(this, android.R.color.white))
@@ -138,6 +131,14 @@ class MainActivity : AppCompatActivity() {
 
         // Handle busy state
         btnToggle.isEnabled = !state.isBusy
+    }
+
+    private fun Button.safeSetBackgroundResource(@DrawableRes resId: Int) {
+        try {
+            setBackgroundResource(resId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set background resource", e)
+        }
     }
 
     private fun log(message: String) {
