@@ -191,4 +191,32 @@ class RootUtilTest {
         mockShellExecutor.commandsToThrow["id"] = RuntimeException("Root check failed")
         assertFalse("Should return false when id command throws exception", RootUtil.isRootAvailable())
     }
+
+    @Test
+    fun testGetEnablePrivacyScript_Sanitization() {
+        // Test with shell metacharacters
+        val maliciousDnsId = "test'; id; echo '"
+        val tempDir = "/tmp"
+
+        val script = RootUtil.getEnablePrivacyScript(maliciousDnsId, tempDir)
+
+        // Expected escaped version: 'test'\''t; id; echo '\''
+        // We verify that the script contains the escaped single quote sequence
+        assertTrue("Script should contain escaped single quote", script.contains("'\''"))
+    }
+
+    @Test
+    fun testEnablePrivacyMode_InvalidId() = runTest {
+        val invalidDnsId = "id; whoami"
+        val tempDir = "/tmp"
+        val result = RootUtil.enablePrivacyMode(invalidDnsId, tempDir)
+        assertTrue("Should return error for invalid DNS ID", result.startsWith("Error: Invalid NextDNS ID"))
+    }
+
+    @Test
+    fun testIsPrivacyModeEnabled_InvalidId() = runTest {
+        val invalidDnsId = "id; whoami"
+        val result = RootUtil.isPrivacyModeEnabled(invalidDnsId)
+        assertFalse("Should return false for invalid DNS ID", result)
+    }
 }
