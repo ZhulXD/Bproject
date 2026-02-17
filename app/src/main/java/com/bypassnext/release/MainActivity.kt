@@ -1,6 +1,7 @@
 package com.bypassnext.release
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -12,6 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private const val TAG = "MainActivity"
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnToggle: Button
@@ -110,7 +112,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 btnToggle.setBackgroundResource(R.drawable.bg_circle_active)
             } catch (e: Exception) {
-                // Fallback or ignore
+                Log.e(TAG, "Failed to set active background resource", e)
             }
 
             tvDnsStatus.text = etNextDnsId.text.toString()
@@ -124,7 +126,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 btnToggle.setBackgroundResource(R.drawable.bg_circle_inactive)
             } catch (e: Exception) {
-                // Fallback
+                Log.e(TAG, "Failed to set inactive background resource", e)
             }
 
             tvDnsStatus.text = getString(R.string.system_default)
