@@ -3,6 +3,7 @@ package com.bypassnext.release
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
+import java.io.DataOutputStream
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,26 +15,70 @@ interface ShellExecutor {
     suspend fun execute(command: String): Result<String>
 }
 
-class DefaultShellExecutor : ShellExecutor {
-    override suspend fun execute(command: String): Result<String> = withContext(Dispatchers.IO) {
+class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
+    private var process: Process? = null
+    private var writer: BufferedWriter? = null
+    private var reader: BufferedReader? = null
+    private val mutex = Mutex()
+    private val TOKEN = UUID.randomUUID().toString()
+
+    private fun ensureProcess() {
+        if (process?.isAlive == true) return
+
         try {
-            val process = Runtime.getRuntime().exec("su")
-            val os = DataOutputStream(process.outputStream)
-            os.writeBytes(command + "\n")
-            os.writeBytes("exit\n")
-            os.flush()
-            process.waitFor()
+            val pb = ProcessBuilder(shell)
+            pb.redirectErrorStream(true)
+            process = pb.start()
 
-            val output = process.inputStream.bufferedReader().readText()
-            val error = process.errorStream.bufferedReader().readText()
-
-            if (process.exitValue() == 0) {
-                Result.success(output)
-            } else {
-                Result.failure(Exception(error))
-            }
+            writer = process!!.outputStream.bufferedWriter()
+            reader = process!!.inputStream.bufferedReader()
         } catch (e: Exception) {
-            Result.failure(e)
+            throw IOException("Failed to start shell process: $shell", e)
+        }
+    }
+
+    override suspend fun execute(command: String): Result<String> = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            try {
+                ensureProcess()
+                val writer = this@DefaultShellExecutor.writer!!
+                val reader = this@DefaultShellExecutor.reader!!
+
+                // Append token to detect end of command
+                // echo the token and exit code
+                // We use UUID to uniquely identify the end of our command output
+                writer.write("$command; echo \"$TOKEN $?\"")
+                writer.newLine()
+                writer.flush()
+
+                val output = StringBuilder()
+                var exitCode = -1
+
+                while (true) {
+                    val line = reader.readLine() ?: break // Pipe broken
+                    if (line.contains(TOKEN)) {
+                         val parts = line.trim().split(" ")
+                         // Format: ... UUID exitCode
+                         // check if the line ends with TOKEN and exit code
+                         if (parts.size >= 2 && parts[parts.size - 2] == TOKEN) {
+                             exitCode = parts.last().toIntOrNull() ?: -1
+                             break
+                         }
+                    }
+                    output.append(line).append("\n")
+                }
+
+                if (exitCode == 0) {
+                    Result.success(output.toString().trim())
+                } else {
+                    Result.failure(Exception(output.toString().trim()))
+                }
+            } catch (e: Exception) {
+                // If IO error or crash, kill process to restart next time
+                process?.destroy()
+                process = null
+                Result.failure(e)
+            }
         }
     }
 }
