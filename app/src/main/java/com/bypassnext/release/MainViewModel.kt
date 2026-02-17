@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.ArrayDeque
+import java.util.ArrayList
 
 data class MainUiState(
     val isRootGranted: Boolean = false,
@@ -38,6 +40,9 @@ class MainViewModel(
 
     // Custom scope since lifecycle-viewmodel-ktx is not available or we want to control dispatcher
     private val viewModelScope = CoroutineScope(dispatcher + SupervisorJob())
+
+    private val MAX_LOG_SIZE = 1000
+    private val logBuffer = ArrayDeque<String>(MAX_LOG_SIZE)
 
     init {
         checkRoot()
@@ -103,7 +108,21 @@ class MainViewModel(
     }
 
     private fun disablePrivacy(tempDir: String) {
-        log(stringProvider.getString(R.string.deactivating_privacy_mode))
+        performPrivacyAction(
+            startMessageRes = R.string.deactivating_privacy_mode,
+            action = { repository.disablePrivacyMode(tempDir) },
+            targetState = false,
+            errorMessageRes = R.string.failed_to_deactivate
+        )
+    }
+
+    private fun performPrivacyAction(
+        startMessageRes: Int,
+        action: suspend () -> String,
+        targetState: Boolean,
+        errorMessageRes: Int
+    ) {
+        log(stringProvider.getString(startMessageRes))
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
@@ -120,11 +139,19 @@ class MainViewModel(
         }
     }
 
-
     private fun log(message: String) {
         val timestamp = dateFormat.get()!!.format(Date())
         val logEntry = "[$timestamp] $message"
-        _uiState.update { it.copy(logs = it.logs + logEntry) }
+
+        val newLogs = synchronized(logBuffer) {
+            if (logBuffer.size >= MAX_LOG_SIZE) {
+                logBuffer.pollFirst()
+            }
+            logBuffer.addLast(logEntry)
+            ArrayList(logBuffer)
+        }
+
+        _uiState.update { it.copy(logs = newLogs) }
     }
 }
 

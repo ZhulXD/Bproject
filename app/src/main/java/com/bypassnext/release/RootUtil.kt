@@ -1,11 +1,14 @@
 package com.bypassnext.release
 
-import java.io.DataOutputStream
+import java.io.BufferedReader
+import java.io.BufferedWriter
 import java.io.IOException
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface ShellExecutor {
     suspend fun execute(command: String): Result<String>
@@ -45,7 +48,6 @@ object RootUtil {
     }
 
     fun isValidNextDnsId(nextDnsId: String): Boolean {
-        // NextDNS IDs are typically alphanumeric, possibly with hyphens or dots
         return nextDnsId.isNotEmpty() && nextDnsId.matches(Regex("^[a-zA-Z0-9.-]+$"))
     }
 
@@ -102,7 +104,6 @@ object RootUtil {
             cp ${'$'}SRC_DIR/* "${'$'}TEMP_DIR/"
 
             # Filter out the blocked ones (DigiCert, GlobalSign, SSL) based on content
-            # Note: Using grep on binary files can be tricky, assuming ASCII text exists inside PEM
             grep -El "Digi[Cc]ert|GlobalSign|SSL" ${'$'}TEMP_DIR/* | xargs rm 2>/dev/null
 
             # Mount the filtered directory over the system one
