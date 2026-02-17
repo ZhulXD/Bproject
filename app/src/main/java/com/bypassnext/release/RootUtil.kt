@@ -87,13 +87,14 @@ object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
 
+    private val NEXT_DNS_ID_REGEX = Regex("^[a-zA-Z0-9.-]+$")
 
     private fun escapeShellArg(arg: String): String {
         return "'" + arg.replace("'", "'\\''") + "'"
     }
 
     fun isValidNextDnsId(nextDnsId: String): Boolean {
-        return nextDnsId.isNotEmpty() && nextDnsId.matches(Regex("^[a-zA-Z0-9.-]+$"))
+        return nextDnsId.isNotEmpty() && nextDnsId.matches(NEXT_DNS_ID_REGEX)
     }
 
     suspend fun execute(command: String): Result<String> = shellExecutor.execute(command)
