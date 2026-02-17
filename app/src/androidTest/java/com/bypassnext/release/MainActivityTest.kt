@@ -101,7 +101,7 @@ class MainActivityTest {
         mockExecutor.commandResponses["settings get global private_dns_specifier"] = ""
 
         // Mock success response for enable script (it ends with "Certificates filtered.")
-        mockExecutor.commandResponses["enablePrivacyMode"] = "Privacy Mode Activated: DNS set to NextDNS, Certificates filtered."
+        mockExecutor.commandResponses["settings put global private_dns_mode hostname"] = "Privacy Mode Activated: DNS set to NextDNS, Certificates filtered."
 
         ActivityScenario.launch(MainActivity::class.java).use {
             // Click to enable
@@ -123,7 +123,7 @@ class MainActivityTest {
         mockExecutor.commandResponses["settings get global private_dns_specifier"] = "a4f5f2.dns.nextdns.io"
 
         // Mock success response for disable script
-        mockExecutor.commandResponses["disablePrivacyMode"] = "Privacy Mode Deactivated: DNS reset, System Certificates restored."
+        mockExecutor.commandResponses["settings put global private_dns_mode off"] = "Privacy Mode Deactivated: DNS reset, System Certificates restored."
 
         ActivityScenario.launch(MainActivity::class.java).use {
             // Click to deactivate
