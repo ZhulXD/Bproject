@@ -139,22 +139,31 @@ class MainActivityTest {
 
     @Test
     fun testTogglePrivacy_EmptyID() {
-        // Mock root granted and privacy disabled
+        // Mock root granted
         mockExecutor.commandResponses["id"] = "uid=0(root)"
+        // Mock initial privacy check (if any)
         mockExecutor.commandResponses["settings get global private_dns_mode"] = "off"
         mockExecutor.commandResponses["settings get global private_dns_specifier"] = ""
 
         ActivityScenario.launch(MainActivity::class.java).use {
-            // Clear the ID
+            // Clear the ID field
             onView(withId(R.id.etNextDnsId)).perform(replaceText(""), closeSoftKeyboard())
 
-            // Click to toggle
+            // Click toggle
             onView(withId(R.id.btnToggle)).perform(click())
 
-            // Check UI is still INACTIVE
-            onView(withId(R.id.btnToggle)).check(matches(withText("INACTIVE")))
-            // Check error log
+            // Verify error log
             onView(withId(R.id.tvLog)).check(matches(withText(containsString("Error: NextDNS ID is required"))))
+
+            // Verify button is still INACTIVE (meaning toggle didn't happen)
+            onView(withId(R.id.btnToggle)).check(matches(withText("INACTIVE")))
+
+            // Verify no toggle commands were executed
+            // The enable script contains "settings put global private_dns_mode hostname"
+            val toggleCommandExecuted = mockExecutor.executedCommands.any {
+                it.contains("settings put global private_dns_mode hostname")
+            }
+            org.junit.Assert.assertFalse("Toggle command should not have been executed", toggleCommandExecuted)
         }
     }
 }
