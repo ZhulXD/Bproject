@@ -99,7 +99,7 @@ class MainActivityTest {
         mockExecutor.commandResponses["settings get global private_dns_specifier"] = ""
 
         // Mock success response for enable script (it ends with "Certificates filtered.")
-        mockExecutor.commandResponses["enablePrivacyMode"] = "Privacy Mode Activated: DNS set to NextDNS, Certificates filtered."
+        mockExecutor.commandResponses["settings put global private_dns_mode hostname"] = "Privacy Mode Activated: DNS set to NextDNS, Certificates filtered."
 
         ActivityScenario.launch(MainActivity::class.java).use {
             // Click to enable
@@ -121,7 +121,7 @@ class MainActivityTest {
         mockExecutor.commandResponses["settings get global private_dns_specifier"] = "a4f5f2.dns.nextdns.io"
 
         // Mock success response for disable script
-        mockExecutor.commandResponses["disablePrivacyMode"] = "Privacy Mode Deactivated: DNS reset, System Certificates restored."
+        mockExecutor.commandResponses["settings put global private_dns_mode off"] = "Privacy Mode Deactivated: DNS reset, System Certificates restored."
 
         ActivityScenario.launch(MainActivity::class.java).use {
             // Click to deactivate
@@ -132,6 +132,30 @@ class MainActivityTest {
             onView(withId(R.id.tvDnsStatus)).check(matches(withText("System Default")))
             onView(withId(R.id.tvLog)).check(matches(withText(containsString("Deactivating Privacy Mode"))))
             onView(withId(R.id.tvLog)).check(matches(withText(containsString("System Certificates restored"))))
+        }
+    }
+
+    @Test
+    fun testTogglePrivacy_Activate_Failure() {
+        // Mock root granted and privacy disabled initially
+        mockExecutor.commandResponses["id"] = "uid=0(root)"
+        mockExecutor.commandResponses["settings get global private_dns_mode"] = "off"
+        mockExecutor.commandResponses["settings get global private_dns_specifier"] = ""
+
+        // Mock failure response for enable script
+        mockExecutor.commandResponses["settings put global private_dns_mode hostname"] = "Error: Failed to enable"
+
+        ActivityScenario.launch(MainActivity::class.java).use {
+            // Click to enable
+            onView(withId(R.id.btnToggle)).perform(click())
+
+            // Check UI remains INACTIVE
+            onView(withId(R.id.btnToggle)).check(matches(withText("INACTIVE")))
+            onView(withId(R.id.tvDnsStatus)).check(matches(withText("System Default")))
+
+            // Check logs contain failure message
+            onView(withId(R.id.tvLog)).check(matches(withText(containsString("Activating Privacy Mode"))))
+            onView(withId(R.id.tvLog)).check(matches(withText(containsString("Failed to activate"))))
         }
     }
 }
