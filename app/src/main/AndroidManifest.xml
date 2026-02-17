@@ -7,7 +7,7 @@
     <!-- Root access is requested at runtime via 'su', no manifest permission needed specifically -->
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@drawable/ic_logo"
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_logo"
