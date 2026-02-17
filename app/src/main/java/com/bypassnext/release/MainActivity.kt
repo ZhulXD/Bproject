@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etNextDnsId: EditText
 
     private lateinit var viewModel: MainViewModel
+    private var lastRenderedLogCount = 0
 
     private val PREFS_NAME = "BypassNextPrefs"
     private val KEY_NEXTDNS_ID = "nextdns_id"
@@ -76,15 +77,31 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(state: MainUiState) {
         // Log updates
-        // Join logs with newline
-        val logsText = state.logs.joinToString("\n")
-        if (tvLog.text.toString() != logsText) {
-             tvLog.text = logsText
-             // Scroll to bottom
-             val scrollAmount = tvLog.layout?.let { layout ->
-                 tvLog.scrollY + (tvLog.height) - layout.getLineBottom(tvLog.lineCount - 1)
-             } ?: 0
-             // Ideally use a ScrollView, but simple text update is fine for now
+        if (state.logs.size < lastRenderedLogCount) {
+            // Logs were cleared or reset
+            tvLog.text = ""
+            lastRenderedLogCount = 0
+        }
+
+        if (state.logs.size > lastRenderedLogCount) {
+            val newLogs = state.logs.subList(lastRenderedLogCount, state.logs.size)
+            val newText = newLogs.joinToString("\n")
+
+            if (lastRenderedLogCount > 0) {
+                tvLog.append("\n")
+            }
+            tvLog.append(newText)
+            lastRenderedLogCount = state.logs.size
+
+            // Scroll to bottom
+            tvLog.post {
+                val scrollAmount = tvLog.layout?.let { layout ->
+                    layout.getLineBottom(tvLog.lineCount - 1) - tvLog.height
+                } ?: 0
+                if (scrollAmount > 0) {
+                    tvLog.scrollTo(0, scrollAmount)
+                }
+            }
         }
 
         // Update UI based on state
