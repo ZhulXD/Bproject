@@ -115,7 +115,7 @@ class RootUtilTest {
     }
 
     @Test
-    fun testEnablePrivacyMode_DefaultDir() = runTest {
+    fun testEnablePrivacyMode_SpecificDir() = runTest {
         val tempDir = "/data/local/tmp/filtered_certs"
         RootUtil.enablePrivacyMode(TEST_DNS_ID, tempDir)
 
