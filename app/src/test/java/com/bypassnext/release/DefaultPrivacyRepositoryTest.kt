@@ -56,7 +56,9 @@ class DefaultPrivacyRepositoryTest {
     @Test
     fun testEnablePrivacyMode() = runTest {
         val tempDir = "/data/local/tmp/test"
-        repository.enablePrivacyMode(TEST_DNS_ID, tempDir)
+        val result = repository.enablePrivacyMode(TEST_DNS_ID, tempDir)
+        assertTrue("Should return success", result.isSuccess)
+
         val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
 
         // Verify key commands are present, ensuring delegation to RootUtil
@@ -68,7 +70,9 @@ class DefaultPrivacyRepositoryTest {
     @Test
     fun testDisablePrivacyMode() = runTest {
         val tempDir = "/data/local/tmp/test"
-        repository.disablePrivacyMode(tempDir)
+        val result = repository.disablePrivacyMode(tempDir)
+        assertTrue("Should return success", result.isSuccess)
+
         val executedScript = mockShellExecutor.executedCommands.joinToString("\n")
 
         assertTrue("Should reset DNS mode", executedScript.contains("settings put global private_dns_mode off"))

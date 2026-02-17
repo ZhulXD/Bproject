@@ -8,11 +8,11 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.async
 
 interface ShellExecutor {
-    suspend fun execute(command: String): String
+    suspend fun execute(command: String): Result<String>
 }
 
 class DefaultShellExecutor : ShellExecutor {
-    override suspend fun execute(command: String): String = withContext(Dispatchers.IO) {
+    override suspend fun execute(command: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             val process = Runtime.getRuntime().exec("su")
             val os = DataOutputStream(process.outputStream)
@@ -24,11 +24,13 @@ class DefaultShellExecutor : ShellExecutor {
             val output = process.inputStream.bufferedReader().readText()
             val error = process.errorStream.bufferedReader().readText()
 
-            if (process.exitValue() == 0) output else "Error: $error"
-        } catch (e: IOException) {
-            "Error: ${e.message}"
-        } catch (e: InterruptedException) {
-            "Error: ${e.message}"
+            if (process.exitValue() == 0) {
+                Result.success(output)
+            } else {
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
@@ -47,22 +49,19 @@ object RootUtil {
         return nextDnsId.isNotEmpty() && nextDnsId.matches(Regex("^[a-zA-Z0-9.-]+$"))
     }
 
-    suspend fun execute(command: String): String = shellExecutor.execute(command)
+    suspend fun execute(command: String): Result<String> = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val output = execute("id")
-            !output.startsWith("Error")
-        } catch (e: Exception) {
-            false
-        }
+        execute("id").isSuccess
     }
 
     suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = coroutineScope {
         if (!isValidNextDnsId(nextDnsId)) return@coroutineScope false
 
         // Check DNS settings in a single shell execution to reduce process overhead
-        val output = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
+        val result = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
+        val output = result.getOrNull() ?: return@coroutineScope false
+
         val lines = output.trim().split("\n").map { it.trim() }
 
         if (lines.size < 2) return@coroutineScope false
@@ -117,9 +116,9 @@ object RootUtil {
     }
 
     // Commands to enable Privacy Mode
-    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): String {
+    suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): Result<String> {
         if (!isValidNextDnsId(nextDnsId)) {
-            return "Error: Invalid NextDNS ID"
+            return Result.failure(IllegalArgumentException("Invalid NextDNS ID"))
         }
         return execute(getEnablePrivacyScript(nextDnsId, tempDir))
     }
@@ -146,7 +145,7 @@ object RootUtil {
     }
 
     // Commands to disable Privacy Mode (Revert)
-    suspend fun disablePrivacyMode(tempDir: String): String {
+    suspend fun disablePrivacyMode(tempDir: String): Result<String> {
         return execute(getDisablePrivacyScript(tempDir))
     }
 }

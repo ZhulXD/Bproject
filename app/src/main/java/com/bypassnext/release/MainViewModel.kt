@@ -89,14 +89,16 @@ class MainViewModel(
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            val result = repository.enablePrivacyMode(nextDnsId, tempDir)
-            log(result)
-            if (!result.startsWith("Error")) {
-                _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
-            } else {
-                log(stringProvider.getString(R.string.failed_to_activate))
-                _uiState.update { it.copy(isBusy = false) }
-            }
+            repository.enablePrivacyMode(nextDnsId, tempDir)
+                .onSuccess { output ->
+                    log(output)
+                    _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
+                }
+                .onFailure { error ->
+                    log("Error: ${error.message}")
+                    log(stringProvider.getString(R.string.failed_to_activate))
+                    _uiState.update { it.copy(isBusy = false) }
+                }
         }
     }
 
@@ -105,14 +107,16 @@ class MainViewModel(
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            val result = repository.disablePrivacyMode(tempDir)
-            log(result)
-            if (!result.startsWith("Error")) {
-                _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
-            } else {
-                log(stringProvider.getString(R.string.failed_to_deactivate))
-                _uiState.update { it.copy(isBusy = false) }
-            }
+            repository.disablePrivacyMode(tempDir)
+                .onSuccess { output ->
+                    log(output)
+                    _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
+                }
+                .onFailure { error ->
+                    log("Error: ${error.message}")
+                    log(stringProvider.getString(R.string.failed_to_deactivate))
+                    _uiState.update { it.copy(isBusy = false) }
+                }
         }
     }
 

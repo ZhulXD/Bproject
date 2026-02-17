@@ -197,7 +197,8 @@ class RootUtilTest {
         val invalidDnsId = "id; whoami"
         val tempDir = "/tmp"
         val result = RootUtil.enablePrivacyMode(invalidDnsId, tempDir)
-        assertTrue("Should return error for invalid DNS ID", result.startsWith("Error: Invalid NextDNS ID"))
+        assertTrue("Should return failure for invalid DNS ID", result.isFailure)
+        assertTrue("Should contain error message", result.exceptionOrNull()?.message?.contains("Invalid NextDNS ID") == true)
     }
 
     @Test
