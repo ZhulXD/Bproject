@@ -150,24 +150,24 @@ class RootUtilTest {
 
     @Test
     fun testIsPrivacyModeEnabled_True() = runTest {
-        mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "hostname"
-        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = TEST_DNS_ID
+        val combinedCommand = "settings get global private_dns_mode; settings get global private_dns_specifier"
+        mockShellExecutor.commandResponses[combinedCommand] = "hostname\n$TEST_DNS_ID"
 
         assertTrue("Should return true when settings are correct", RootUtil.isPrivacyModeEnabled(TEST_DNS_ID))
     }
 
     @Test
     fun testIsPrivacyModeEnabled_False_WrongMode() = runTest {
-        mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "off"
-        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = TEST_DNS_ID
+        val combinedCommand = "settings get global private_dns_mode; settings get global private_dns_specifier"
+        mockShellExecutor.commandResponses[combinedCommand] = "off\n$TEST_DNS_ID"
 
         assertFalse("Should return false when mode is off", RootUtil.isPrivacyModeEnabled(TEST_DNS_ID))
     }
 
     @Test
     fun testIsPrivacyModeEnabled_False_WrongSpecifier() = runTest {
-        mockShellExecutor.commandResponses["settings get global private_dns_mode"] = "hostname"
-        mockShellExecutor.commandResponses["settings get global private_dns_specifier"] = "wrong.dns"
+        val combinedCommand = "settings get global private_dns_mode; settings get global private_dns_specifier"
+        mockShellExecutor.commandResponses[combinedCommand] = "hostname\nwrong.dns"
 
         assertFalse("Should return false when specifier is wrong", RootUtil.isPrivacyModeEnabled(TEST_DNS_ID))
     }
