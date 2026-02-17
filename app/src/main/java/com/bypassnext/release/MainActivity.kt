@@ -23,9 +23,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: MainViewModel
     private var lastRenderedLogCount = 0
 
-    private val PREFS_NAME = "BypassNextPrefs"
-    private val KEY_NEXTDNS_ID = "nextdns_id"
-
     private val logDateFormat by lazy {
         SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     }
@@ -41,8 +38,8 @@ class MainActivity : AppCompatActivity() {
         etNextDnsId = findViewById(R.id.etNextDnsId)
 
         // Load saved ID
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val savedId = prefs.getString(KEY_NEXTDNS_ID, "") ?: ""
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
+        val savedId = prefs.getString(AppConstants.KEY_NEXTDNS_ID, "") ?: ""
         etNextDnsId.setText(savedId)
 
         val factory = MainViewModelFactory(DefaultPrivacyRepository(), AndroidStringProvider(this))
@@ -54,8 +51,8 @@ class MainActivity : AppCompatActivity() {
                 log("Error: NextDNS ID is required")
             } else {
                 // Save ID
-                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-                    .putString(KEY_NEXTDNS_ID, nextDnsId)
+                getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE).edit()
+                    .putString(AppConstants.KEY_NEXTDNS_ID, nextDnsId)
                     .apply()
 
                 val tempDir = cacheDir.absolutePath + "/filtered_certs"
