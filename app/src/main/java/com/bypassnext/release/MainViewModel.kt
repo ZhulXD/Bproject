@@ -85,37 +85,43 @@ class MainViewModel(
     }
 
     private fun enablePrivacy(nextDnsId: String, tempDir: String) {
-        log(stringProvider.getString(R.string.activating_privacy_mode))
-        _uiState.update { it.copy(isBusy = true) }
-
-        viewModelScope.launch {
-            val result = repository.enablePrivacyMode(nextDnsId, tempDir)
-            log(result)
-            if (!result.startsWith("Error")) {
-                _uiState.update { it.copy(isPrivacyActive = true, isBusy = false) }
-            } else {
-                log(stringProvider.getString(R.string.failed_to_activate))
-                _uiState.update { it.copy(isBusy = false) }
-            }
-        }
+        performPrivacyAction(
+            startMessageRes = R.string.activating_privacy_mode,
+            action = { repository.enablePrivacyMode(nextDnsId, tempDir) },
+            targetState = true,
+            errorMessageRes = R.string.failed_to_activate
+        )
     }
 
     private fun disablePrivacy(tempDir: String) {
-        log(stringProvider.getString(R.string.deactivating_privacy_mode))
+        performPrivacyAction(
+            startMessageRes = R.string.deactivating_privacy_mode,
+            action = { repository.disablePrivacyMode(tempDir) },
+            targetState = false,
+            errorMessageRes = R.string.failed_to_deactivate
+        )
+    }
+
+    private fun performPrivacyAction(
+        startMessageRes: Int,
+        action: suspend () -> String,
+        targetState: Boolean,
+        errorMessageRes: Int
+    ) {
+        log(stringProvider.getString(startMessageRes))
         _uiState.update { it.copy(isBusy = true) }
 
         viewModelScope.launch {
-            val result = repository.disablePrivacyMode(tempDir)
+            val result = action()
             log(result)
             if (!result.startsWith("Error")) {
-                _uiState.update { it.copy(isPrivacyActive = false, isBusy = false) }
+                _uiState.update { it.copy(isPrivacyActive = targetState, isBusy = false) }
             } else {
-                log(stringProvider.getString(R.string.failed_to_deactivate))
+                log(stringProvider.getString(errorMessageRes))
                 _uiState.update { it.copy(isBusy = false) }
             }
         }
     }
-
 
     private fun log(message: String) {
         val timestamp = dateFormat.get()!!.format(Date())
