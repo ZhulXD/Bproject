@@ -3,6 +3,8 @@ package com.bypassnext.release
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.replaceText
+import androidx.test.espresso.action.ViewActions.closeSoftKeyboard
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -136,26 +138,23 @@ class MainActivityTest {
     }
 
     @Test
-    fun testTogglePrivacy_Activate_Failure() {
-        // Mock root granted and privacy disabled initially
+    fun testTogglePrivacy_EmptyID() {
+        // Mock root granted and privacy disabled
         mockExecutor.commandResponses["id"] = "uid=0(root)"
         mockExecutor.commandResponses["settings get global private_dns_mode"] = "off"
         mockExecutor.commandResponses["settings get global private_dns_specifier"] = ""
 
-        // Mock failure response for enable script
-        mockExecutor.commandResponses["settings put global private_dns_mode hostname"] = "Error: Failed to enable"
-
         ActivityScenario.launch(MainActivity::class.java).use {
-            // Click to enable
+            // Clear the ID
+            onView(withId(R.id.etNextDnsId)).perform(replaceText(""), closeSoftKeyboard())
+
+            // Click to toggle
             onView(withId(R.id.btnToggle)).perform(click())
 
-            // Check UI remains INACTIVE
+            // Check UI is still INACTIVE
             onView(withId(R.id.btnToggle)).check(matches(withText("INACTIVE")))
-            onView(withId(R.id.tvDnsStatus)).check(matches(withText("System Default")))
-
-            // Check logs contain failure message
-            onView(withId(R.id.tvLog)).check(matches(withText(containsString("Activating Privacy Mode"))))
-            onView(withId(R.id.tvLog)).check(matches(withText(containsString("Failed to activate"))))
+            // Check error log
+            onView(withId(R.id.tvLog)).check(matches(withText(containsString("Error: NextDNS ID is required"))))
         }
     }
 }
