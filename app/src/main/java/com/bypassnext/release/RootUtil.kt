@@ -39,6 +39,15 @@ object RootUtil {
 
     private const val DEFAULT_TEMP_DIR = "/data/local/tmp/filtered_certs"
 
+    private fun escapeShellArg(arg: String): String {
+        return "'" + arg.replace("'", "'\\''") + "'"
+    }
+
+    fun isValidNextDnsId(nextDnsId: String): Boolean {
+        // NextDNS IDs are typically alphanumeric, possibly with hyphens or dots
+        return nextDnsId.isNotEmpty() && nextDnsId.matches(Regex("^[a-zA-Z0-9.-]+$"))
+    }
+
     suspend fun execute(command: String): String = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
@@ -51,6 +60,8 @@ object RootUtil {
     }
 
     suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = coroutineScope {
+        if (!isValidNextDnsId(nextDnsId)) return@coroutineScope false
+
         // Check DNS settings in parallel
         val dnsModeDeferred = async { execute("settings get global private_dns_mode").trim() }
         val dnsSpecifierDeferred = async { execute("settings get global private_dns_specifier").trim() }
@@ -63,14 +74,16 @@ object RootUtil {
     }
 
     fun getEnablePrivacyScript(nextDnsId: String, tempDir: String): String {
+        val escapedNextDnsId = escapeShellArg(nextDnsId)
+        val escapedTempDir = escapeShellArg(tempDir)
         return """
             # 1. Set Private DNS
             settings put global private_dns_mode hostname
-            settings put global private_dns_specifier $nextDnsId
+            settings put global private_dns_specifier $escapedNextDnsId
 
             # 2. Disable Certificates (Safe Mount Method)
             # Create a clean temp directory
-            TEMP_DIR="$tempDir"
+            TEMP_DIR=$escapedTempDir
             rm -rf "${'$'}TEMP_DIR"
             mkdir -p "${'$'}TEMP_DIR"
             chmod 755 "${'$'}TEMP_DIR"
@@ -102,10 +115,14 @@ object RootUtil {
     // Commands to enable Privacy Mode
     // TODO: Use applicationContext.cacheDir.absolutePath instead of hardcoded path if possible
     suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String = DEFAULT_TEMP_DIR): String {
+        if (!isValidNextDnsId(nextDnsId)) {
+            return "Error: Invalid NextDNS ID"
+        }
         return execute(getEnablePrivacyScript(nextDnsId, tempDir))
     }
 
     fun getDisablePrivacyScript(tempDir: String): String {
+        val escapedTempDir = escapeShellArg(tempDir)
         return """
             # 1. Reset DNS
             settings put global private_dns_mode off
@@ -119,7 +136,7 @@ object RootUtil {
             fi
 
             # Clean up temp
-            rm -rf "$tempDir"
+            rm -rf $escapedTempDir
 
             echo "Privacy Mode Deactivated: DNS reset, System Certificates restored."
         """.trimIndent()
