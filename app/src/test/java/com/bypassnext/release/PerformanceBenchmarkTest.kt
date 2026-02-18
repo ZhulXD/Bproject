@@ -24,6 +24,10 @@ class PerformanceBenchmarkTest {
             else "unknown"
             return Result.success(response)
         }
+
+        override fun close() {
+            // No-op
+        }
     }
 
     @After
