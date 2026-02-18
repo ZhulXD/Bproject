@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etNextDnsId: EditText
 
     private lateinit var viewModel: MainViewModel
-    private var lastRenderedLogCount = 0
+    private val logDiffer = LogDiffer()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,31 +75,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderLogs(state: MainUiState) {
-        // Log updates
-        if (state.logs.size < lastRenderedLogCount) {
-            // Logs were cleared or reset
-            tvLog.text = ""
-            lastRenderedLogCount = 0
-        }
-
-        if (state.logs.size > lastRenderedLogCount) {
-            val newLogs = state.logs.subList(lastRenderedLogCount, state.logs.size)
-            val newText = newLogs.joinToString("\n")
-
-            if (lastRenderedLogCount > 0) {
-                tvLog.append("\n")
-            }
-            tvLog.append(newText)
-            lastRenderedLogCount = state.logs.size
-
-            // Scroll to bottom
-            tvLog.post {
-                val scrollAmount = tvLog.layout?.let { layout ->
-                    layout.getLineBottom(tvLog.lineCount - 1) - tvLog.height
-                } ?: 0
-                if (scrollAmount > 0) {
-                    tvLog.scrollTo(0, scrollAmount)
+        when (val update = logDiffer.computeUpdate(state.logs)) {
+            is LogUpdate.NoChange -> return
+            is LogUpdate.Append -> {
+                if (update.addNewline) {
+                    tvLog.append("\n")
                 }
+                tvLog.append(update.newText)
+                scrollToBottom()
+            }
+            is LogUpdate.Replace -> {
+                tvLog.text = update.fullText
+                scrollToBottom()
+            }
+        }
+    }
+
+    private fun scrollToBottom() {
+        tvLog.post {
+            val scrollAmount = tvLog.layout?.let { layout ->
+                layout.getLineBottom(tvLog.lineCount - 1) - tvLog.height
+            } ?: 0
+            if (scrollAmount > 0) {
+                tvLog.scrollTo(0, scrollAmount)
             }
         }
     }

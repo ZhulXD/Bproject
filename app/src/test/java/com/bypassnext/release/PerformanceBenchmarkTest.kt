@@ -28,7 +28,7 @@ class PerformanceBenchmarkTest {
 
     @After
     fun tearDown() {
-        RootUtil.shellExecutor = DefaultShellExecutor()
+        RootUtil.shellExecutor = RootUtil.createDefaultShellExecutor()
     }
 
     @Test

@@ -15,7 +15,7 @@ interface ShellExecutor {
     suspend fun execute(command: String): Result<String>
 }
 
-class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
+private class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
     private var process: Process? = null
     private var writer: BufferedWriter? = null
     private var reader: BufferedReader? = null
@@ -95,6 +95,7 @@ class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
 object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
+    internal fun createDefaultShellExecutor(shell: String = "su"): ShellExecutor = DefaultShellExecutor(shell)
 
     private val NEXT_DNS_ID_REGEX = Regex("^[a-zA-Z0-9.-]+$")
 
