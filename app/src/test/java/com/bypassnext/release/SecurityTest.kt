@@ -63,4 +63,17 @@ class SecurityTest {
         assertTrue("Should return failure for invalid ID", result.isFailure)
         assertTrue("Should contain error message", result.exceptionOrNull()?.message == "Invalid NextDNS ID")
     }
+
+    @Test
+    fun testTempDirPermissions_Secure() {
+        val nextDnsId = "test.dns.id"
+        val tempDir = "/data/local/tmp/filtered_certs"
+        val script = RootUtil.getEnablePrivacyScript(nextDnsId, tempDir)
+
+        // Verify that chmod 700 is used for the temp directory
+        assertTrue("Script should use secure permissions (chmod 700) for TEMP_DIR",
+            script.contains("chmod 700 \"\$TEMP_DIR\""))
+        assertFalse("Script should NOT use insecure permissions (chmod 755) for TEMP_DIR",
+            script.contains("chmod 755"))
+    }
 }

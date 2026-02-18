@@ -136,7 +136,7 @@ object RootUtil {
             TEMP_DIR=$escapedTempDir
             rm -rf "${'$'}TEMP_DIR"
             mkdir -p "${'$'}TEMP_DIR"
-            chmod 755 "${'$'}TEMP_DIR"
+            chmod 700 "${'$'}TEMP_DIR"
 
             # Identify source directory (Android version dependent)
             if [ -d "/apex/com.android.conscrypt/cacerts" ]; then
