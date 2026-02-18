@@ -15,15 +15,25 @@ interface ShellExecutor {
     suspend fun execute(command: String): Result<String>
 }
 
-class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
+private class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
     private var process: Process? = null
     private var writer: BufferedWriter? = null
     private var reader: BufferedReader? = null
     private val mutex = Mutex()
     private val TOKEN = UUID.randomUUID().toString()
 
+    private fun isProcessAlive(p: Process?): Boolean {
+        if (p == null) return false
+        return try {
+            p.exitValue()
+            false
+        } catch (e: IllegalThreadStateException) {
+            true
+        }
+    }
+
     private fun ensureProcess() {
-        if (process?.isAlive == true) return
+        if (isProcessAlive(process)) return
 
         try {
             val pb = ProcessBuilder(shell)
@@ -86,6 +96,7 @@ class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
 object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
+    internal fun createDefaultShellExecutor(shell: String = "su"): ShellExecutor = DefaultShellExecutor(shell)
 
     private val NEXT_DNS_ID_REGEX = Regex("^[a-zA-Z0-9.-]+$")
 
