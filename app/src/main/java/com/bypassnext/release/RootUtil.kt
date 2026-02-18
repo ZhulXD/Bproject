@@ -22,8 +22,17 @@ class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
     private val mutex = Mutex()
     private val TOKEN = UUID.randomUUID().toString()
 
+    private fun isProcessAlive(p: Process): Boolean {
+        return try {
+            p.exitValue()
+            false
+        } catch (e: IllegalThreadStateException) {
+            true
+        }
+    }
+
     private fun ensureProcess() {
-        if (process?.isAlive == true) return
+        if (process != null && isProcessAlive(process!!)) return
 
         try {
             val pb = ProcessBuilder(shell)
@@ -162,7 +171,6 @@ object RootUtil {
         """.trimIndent()
     }
 
-    // Commands to enable Privacy Mode
     suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): Result<String> {
         if (!isValidNextDnsId(nextDnsId)) {
             return Result.failure(IllegalArgumentException("Invalid NextDNS ID"))
@@ -191,7 +199,6 @@ object RootUtil {
         """.trimIndent()
     }
 
-    // Commands to disable Privacy Mode (Revert)
     suspend fun disablePrivacyMode(tempDir: String): Result<String> {
         return execute(getDisablePrivacyScript(tempDir))
     }
