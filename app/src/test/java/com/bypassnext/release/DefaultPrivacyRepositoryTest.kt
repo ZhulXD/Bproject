@@ -16,13 +16,13 @@ class DefaultPrivacyRepositoryTest {
     @Before
     fun setUp() {
         mockShellExecutor = TestMockShellExecutor()
-        RootUtil.setShellExecutor(mockShellExecutor)
+        RootUtil.shellExecutor = mockShellExecutor
         repository = DefaultPrivacyRepository()
     }
 
     @After
     fun tearDown() {
-        RootUtil.setShellExecutor(RootUtil.createDefaultShellExecutor())
+        RootUtil.shellExecutor = RootUtil.createDefaultShellExecutor()
     }
 
     @Test

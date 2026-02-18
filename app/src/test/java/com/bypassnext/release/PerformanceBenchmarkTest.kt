@@ -32,14 +32,14 @@ class PerformanceBenchmarkTest {
 
     @After
     fun tearDown() {
-        RootUtil.setShellExecutor(RootUtil.createDefaultShellExecutor())
+        RootUtil.shellExecutor = RootUtil.createDefaultShellExecutor()
     }
 
     @Test
     fun verifyPrivacyCheckCommandOptimization() = runTest {
         // Setup
         val mockExecutor = MockShellExecutor(100)
-        RootUtil.setShellExecutor(mockExecutor)
+        RootUtil.shellExecutor = mockExecutor
         val testId = "a4f5f2.dns.nextdns.io"
 
         // Execute

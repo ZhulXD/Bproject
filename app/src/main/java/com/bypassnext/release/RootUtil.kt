@@ -1,21 +1,17 @@
 package com.bypassnext.release
 
-import java.io.BufferedReader
-import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.IOException
-import java.io.DataOutputStream
-import java.util.UUID
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.TimeoutCancellationException
 
 interface ShellExecutor : Closeable {
     suspend fun execute(command: String): Result<String>
@@ -26,106 +22,66 @@ private class DefaultShellExecutor(
     private val timeoutMs: Long = 60_000L,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : ShellExecutor {
-    private var process: Process? = null
-    private var writer: BufferedWriter? = null
-    private var reader: BufferedReader? = null
-    private val mutex = Mutex()
-    private val TOKEN = UUID.randomUUID().toString()
-    private var timeoutJob: Job? = null
 
-    private fun isProcessAlive(p: Process): Boolean {
-        return try {
-            p.exitValue()
-            false
-        } catch (e: IllegalThreadStateException) {
-            true
-        }
-    }
-
-    private fun ensureProcess() {
-        if (process != null && isProcessAlive(process!!)) return
-
+    override suspend fun execute(command: String): Result<String> = withContext(Dispatchers.IO) {
+        var process: Process? = null
         try {
             val pb = ProcessBuilder(shell)
             pb.redirectErrorStream(true)
             process = pb.start()
 
-            writer = process!!.outputStream.bufferedWriter()
-            reader = process!!.inputStream.bufferedReader()
-        } catch (e: Exception) {
-            throw IOException("Failed to start shell process: $shell", e)
-        }
-    }
-
-    override suspend fun execute(command: String): Result<String> = mutex.withLock {
-        // Cancel existing timeout as we are using the shell
-        timeoutJob?.cancel()
-        timeoutJob = null
-
-        val result = withContext(Dispatchers.IO) {
+            // Write command to stdin
+            // We use strict scoping for outputStream to ensure it's closed immediately,
+            // signaling EOF to the shell process.
             try {
-                ensureProcess()
-                val writer = this@DefaultShellExecutor.writer!!
-                val reader = this@DefaultShellExecutor.reader!!
-
-                // Append token to detect end of command
-                // echo the token and exit code
-                // We use UUID to uniquely identify the end of our command output
-                writer.write("$command; echo \"$TOKEN $?\"")
-                writer.newLine()
-                writer.flush()
-
-                val output = StringBuilder()
-                var exitCode = -1
-
-                while (true) {
-                    val line = reader.readLine() ?: break // Pipe broken
-                    if (line.contains(TOKEN)) {
-                         val parts = line.trim().split(" ")
-                         // Format: ... UUID exitCode
-                         // check if the line ends with TOKEN and exit code
-                         if (parts.size >= 2 && parts[parts.size - 2] == TOKEN) {
-                             exitCode = parts.last().toIntOrNull() ?: -1
-                             break
-                         }
-                    }
-                    output.append(line).append("\n")
+                process.outputStream.buffered().use { writer ->
+                    writer.write(command.toByteArray())
+                    writer.write("\nexit\n".toByteArray())
+                    writer.flush()
                 }
+            } catch (e: IOException) {
+                // If writing fails (e.g. process died), we still want to read output/error
+            }
 
+            // Read output asynchronously
+            val outputDeferred = async {
+                try {
+                    process!!.inputStream.bufferedReader().use { it.readText() }
+                } catch (e: IOException) {
+                    ""
+                }
+            }
+
+            // Wait for exit with timeout
+            val exited = runInterruptible {
+                process!!.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            }
+
+            if (exited) {
+                val output = outputDeferred.await()
+                val exitCode = process!!.exitValue()
                 if (exitCode == 0) {
-                    Result.success(output.toString().trim())
+                    Result.success(output.trim())
                 } else {
-                    Result.failure(Exception(output.toString().trim()))
+                    Result.failure(Exception(output.trim()))
                 }
-            } catch (e: Exception) {
-                // If IO error or crash, kill process to restart next time
-                process?.destroy()
-                process = null
+            } else {
+                process!!.destroy()
+                outputDeferred.cancel()
+                throw TimeoutException("Command timed out after ${timeoutMs}ms")
+            }
+        } catch (e: Exception) {
+            process?.destroy()
+            if (e is TimeoutCancellationException || e is TimeoutException) {
                 Result.failure(e)
+            } else {
+                Result.failure(Exception("Shell execution failed", e))
             }
         }
-
-        // Schedule timeout to close shell if idle
-        if (timeoutMs > 0) {
-            timeoutJob = scope.launch {
-                delay(timeoutMs)
-                close()
-            }
-        }
-
-        result
     }
 
     override fun close() {
-        // We do not need mutex here as destroy() is thread-safe enough and we just want to kill it
-        try {
-            process?.destroy()
-        } catch (e: Exception) {
-            // Ignore
-        }
-        process = null
-        writer = null
-        reader = null
+        // Stateless implementation, nothing to close
     }
 }
 
