@@ -10,9 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 private const val TAG = "MainActivity"
 class MainActivity : AppCompatActivity() {
@@ -25,10 +22,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MainViewModel
     private val logDiffer = LogDiffer()
-
-    private val logDateFormat by lazy {
-        SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         btnToggle.setOnClickListener {
             val nextDnsId = etNextDnsId.text.toString().trim()
             if (nextDnsId.isEmpty()) {
-                log("Error: NextDNS ID is required")
+                viewModel.log("Error: NextDNS ID is required")
             } else {
                 // Save ID
                 getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE).edit()
@@ -147,10 +140,5 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set background resource", e)
         }
-    }
-
-    private fun log(message: String) {
-        val timestamp = logDateFormat.format(Date())
-        tvLog.append("\n> [$timestamp] $message")
     }
 }

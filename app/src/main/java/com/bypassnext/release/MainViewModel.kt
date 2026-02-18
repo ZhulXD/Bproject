@@ -38,7 +38,7 @@ class MainViewModel(
 
     private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
         override fun initialValue(): SimpleDateFormat {
-        return SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault())
+            return SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault())
         }
     }
 
@@ -136,7 +136,7 @@ class MainViewModel(
         }
     }
 
-    private fun log(message: String) {
+    fun log(message: String) {
         val timestamp = dateFormat.get()!!.format(Date())
         val logEntry = "[$timestamp] $message"
 
