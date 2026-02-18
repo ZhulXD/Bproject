@@ -31,8 +31,13 @@ class MainViewModel(
     private val stringProvider: StringProvider,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Main
 ) : ViewModel() {
+    companion object {
+        private const val MAX_LOG_SIZE = 1000
+        private const val LOG_DATE_FORMAT = "HH:mm:ss"
+    }
+
     private val dateFormat = ThreadLocal.withInitial {
-        SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault())
     }
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -41,7 +46,6 @@ class MainViewModel(
     // Custom scope since lifecycle-viewmodel-ktx is not available or we want to control dispatcher
     private val viewModelScope = CoroutineScope(dispatcher + SupervisorJob())
 
-    private val MAX_LOG_SIZE = 1000
     private val logBuffer = ArrayDeque<String>(MAX_LOG_SIZE)
 
     init {
