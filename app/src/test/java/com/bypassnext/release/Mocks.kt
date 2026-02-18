@@ -47,4 +47,8 @@ class TestMockShellExecutor : ShellExecutor {
 
         return Result.success(response)
     }
+
+    override fun close() {
+        // No-op for mock
+    }
 }

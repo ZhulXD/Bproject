@@ -2,25 +2,36 @@ package com.bypassnext.release
 
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.io.Closeable
 import java.io.IOException
 import java.io.DataOutputStream
 import java.util.UUID
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-interface ShellExecutor {
+interface ShellExecutor : Closeable {
     suspend fun execute(command: String): Result<String>
 }
 
-private class DefaultShellExecutor(private val shell: String = "su") : ShellExecutor {
+private class DefaultShellExecutor(
+    private val shell: String = "su",
+    private val timeoutMs: Long = 60_000L,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+) : ShellExecutor {
     private var process: Process? = null
     private var writer: BufferedWriter? = null
     private var reader: BufferedReader? = null
     private val mutex = Mutex()
     private val TOKEN = UUID.randomUUID().toString()
+    private var timeoutJob: Job? = null
 
     private fun isProcessAlive(p: Process): Boolean {
         return try {
@@ -47,7 +58,11 @@ private class DefaultShellExecutor(private val shell: String = "su") : ShellExec
     }
 
     override suspend fun execute(command: String): Result<String> = mutex.withLock {
-        withContext(Dispatchers.IO) {
+        // Cancel existing timeout as we are using the shell
+        timeoutJob?.cancel()
+        timeoutJob = null
+
+        val result = withContext(Dispatchers.IO) {
             try {
                 ensureProcess()
                 val writer = this@DefaultShellExecutor.writer!!
@@ -89,13 +104,39 @@ private class DefaultShellExecutor(private val shell: String = "su") : ShellExec
                 Result.failure(e)
             }
         }
+
+        // Schedule timeout to close shell if idle
+        if (timeoutMs > 0) {
+            timeoutJob = scope.launch {
+                delay(timeoutMs)
+                close()
+            }
+        }
+
+        result
+    }
+
+    override fun close() {
+        // We do not need mutex here as destroy() is thread-safe enough and we just want to kill it
+        try {
+            process?.destroy()
+        } catch (e: Exception) {
+            // Ignore
+        }
+        process = null
+        writer = null
+        reader = null
     }
 }
 
 object RootUtil {
 
     var shellExecutor: ShellExecutor = DefaultShellExecutor()
-    internal fun createDefaultShellExecutor(shell: String = "su"): ShellExecutor = DefaultShellExecutor(shell)
+    internal fun createDefaultShellExecutor(
+        shell: String = "su",
+        timeoutMs: Long = 60_000L,
+        scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    ): ShellExecutor = DefaultShellExecutor(shell, timeoutMs, scope)
 
     private val NEXT_DNS_ID_REGEX = Regex("^[a-zA-Z0-9.-]+$")
 
@@ -202,5 +243,13 @@ object RootUtil {
 
     suspend fun disablePrivacyMode(tempDir: String): Result<String> {
         return execute(getDisablePrivacyScript(tempDir))
+    }
+
+    fun shutdown() {
+        try {
+            shellExecutor.close()
+        } catch (e: Exception) {
+            // Ignore
+        }
     }
 }
