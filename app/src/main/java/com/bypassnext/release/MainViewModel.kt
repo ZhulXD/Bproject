@@ -36,11 +36,6 @@ class MainViewModel(
         private const val LOG_DATE_FORMAT = "HH:mm:ss"
     }
 
-    private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
-        override fun initialValue(): SimpleDateFormat {
-            return SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault())
-        }
-    }
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -137,7 +132,7 @@ class MainViewModel(
     }
 
     fun log(message: String) {
-        val timestamp = dateFormat.get()!!.format(Date())
+        val timestamp = SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault()).format(Date())
         val logEntry = "[$timestamp] $message"
 
         synchronized(logBuffer) {
