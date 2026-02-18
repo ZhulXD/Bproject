@@ -12,6 +12,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.TimeoutCancellationException
+import androidx.annotation.VisibleForTesting
 
 interface ShellExecutor : Closeable {
     suspend fun execute(command: String): Result<String>
@@ -127,11 +128,13 @@ object RootUtil {
         checkPrivacyStatus(dnsMode, dnsSpecifier, nextDnsId)
     }
 
-    fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String, expectedNextDnsId: String): Boolean {
+    @VisibleForTesting
+    internal fun checkPrivacyStatus(dnsMode: String, dnsSpecifier: String, expectedNextDnsId: String): Boolean {
         return dnsMode == "hostname" && dnsSpecifier == expectedNextDnsId
     }
 
-    fun getEnablePrivacyScript(nextDnsId: String, tempDir: String): String {
+    @VisibleForTesting
+    internal fun getEnablePrivacyScript(nextDnsId: String, tempDir: String): String {
         val escapedNextDnsId = escapeShellArg(nextDnsId)
         val escapedTempDir = escapeShellArg(tempDir)
         return """
@@ -176,7 +179,8 @@ object RootUtil {
         return execute(getEnablePrivacyScript(nextDnsId, tempDir))
     }
 
-    fun getDisablePrivacyScript(tempDir: String): String {
+    @VisibleForTesting
+    internal fun getDisablePrivacyScript(tempDir: String): String {
         val escapedTempDir = escapeShellArg(tempDir)
         return """
             # 1. Reset DNS
