@@ -20,4 +20,5 @@
     <string name="status_none">None</string>
     <string name="label_system_log">SYSTEM LOG</string>
     <string name="log_ready">&gt; Ready.</string>
+    <string name="error_nextdns_id_required">Error: NextDNS ID is required</string>
 </resources>

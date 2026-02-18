@@ -1,6 +1,7 @@
 package com.bypassnext.release
 
 import androidx.test.core.app.ActivityScenario
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.replaceText
@@ -29,11 +30,17 @@ class MainActivityTest {
         val commandResponses = mutableMapOf<String, String>()
         val executedCommands = mutableListOf<String>()
 
-        override suspend fun execute(command: String): String {
+        override suspend fun execute(command: String): Result<String> {
             executedCommands.add(command)
-            return commandResponses[command]
+            val response = commandResponses[command]
                 ?: commandResponses.entries.find { command.contains(it.key) }?.value
                 ?: ""
+
+            return if (response.startsWith("Error:")) {
+                Result.failure(Exception(response))
+            } else {
+                Result.success(response)
+            }
         }
     }
 
@@ -153,7 +160,8 @@ class MainActivityTest {
             onView(withId(R.id.btnToggle)).perform(click())
 
             // Verify error log
-            onView(withId(R.id.tvLog)).check(matches(withText(containsString("Error: NextDNS ID is required"))))
+            val expectedError = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.error_nextdns_id_required)
+            onView(withId(R.id.tvLog)).check(matches(withText(containsString(expectedError))))
 
             // Verify button is still INACTIVE (meaning toggle didn't happen)
             onView(withId(R.id.btnToggle)).check(matches(withText("INACTIVE")))

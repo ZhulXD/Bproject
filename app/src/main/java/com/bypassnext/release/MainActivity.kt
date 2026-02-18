@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         btnToggle.setOnClickListener {
             val nextDnsId = etNextDnsId.text.toString().trim()
             if (nextDnsId.isEmpty()) {
-                viewModel.log("Error: NextDNS ID is required")
+                viewModel.log(getString(R.string.error_nextdns_id_required))
             } else {
                 // Save ID
                 getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE).edit()
