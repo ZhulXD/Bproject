@@ -113,7 +113,7 @@ object RootUtil {
         return nextDnsId.isNotEmpty() && nextDnsId.matches(NEXT_DNS_ID_REGEX)
     }
 
-    suspend fun execute(command: String): Result<String> = shellExecutor.execute(command)
+    private suspend fun execute(command: String): Result<String> = shellExecutor.execute(command)
 
     suspend fun isRootAvailable(): Boolean = withContext(Dispatchers.IO) {
         execute("id").isSuccess
