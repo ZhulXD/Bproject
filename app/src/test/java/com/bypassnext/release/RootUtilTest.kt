@@ -11,19 +11,17 @@ import org.junit.Test
 class RootUtilTest {
 
     private lateinit var mockShellExecutor: TestMockShellExecutor
-    private lateinit var originalShellExecutor: ShellExecutor
     private val TEST_DNS_ID = "test.dns.id"
 
     @Before
     fun setUp() {
-        originalShellExecutor = RootUtil.shellExecutor
         mockShellExecutor = TestMockShellExecutor()
-        RootUtil.shellExecutor = mockShellExecutor
+        RootUtil.setShellExecutor(mockShellExecutor)
     }
 
     @After
     fun tearDown() {
-        RootUtil.shellExecutor = originalShellExecutor
+        RootUtil.setShellExecutor(RootUtil.createDefaultShellExecutor())
     }
 
     @Test

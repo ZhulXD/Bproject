@@ -2,6 +2,7 @@ package com.bypassnext.release
 
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import androidx.annotation.VisibleForTesting
 import java.io.IOException
 import java.io.DataOutputStream
 import java.util.UUID
@@ -94,7 +95,12 @@ private class DefaultShellExecutor(private val shell: String = "su") : ShellExec
 
 object RootUtil {
 
-    var shellExecutor: ShellExecutor = DefaultShellExecutor()
+    private var shellExecutor: ShellExecutor = DefaultShellExecutor()
+
+    @VisibleForTesting
+    internal fun setShellExecutor(executor: ShellExecutor) {
+        shellExecutor = executor
+    }
     internal fun createDefaultShellExecutor(shell: String = "su"): ShellExecutor = DefaultShellExecutor(shell)
 
     private val NEXT_DNS_ID_REGEX = Regex("^[a-zA-Z0-9.-]+$")
