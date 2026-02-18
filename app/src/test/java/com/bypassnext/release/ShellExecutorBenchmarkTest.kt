@@ -9,7 +9,7 @@ class ShellExecutorBenchmarkTest {
     @Test
     fun benchmarkProcessCreation() = runBlocking {
         // Use "sh" to benchmark the persistent shell implementation
-        val executor = DefaultShellExecutor("sh")
+        val executor = RootUtil.createDefaultShellExecutor("sh")
         val iterations = 50
 
         // Warm up

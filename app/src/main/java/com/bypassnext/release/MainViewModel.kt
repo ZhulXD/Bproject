@@ -36,8 +36,10 @@ class MainViewModel(
         private const val LOG_DATE_FORMAT = "HH:mm:ss"
     }
 
-    private val dateFormat = ThreadLocal.withInitial {
-        SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault())
+    private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue(): SimpleDateFormat {
+        return SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault())
+        }
     }
 
     private val _uiState = MutableStateFlow(MainUiState())
