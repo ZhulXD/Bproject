@@ -39,6 +39,17 @@
             android:textStyle="bold" />
     </RelativeLayout>
 
+    <!-- Floating Mode Button -->
+    <Button
+        android:id="@+id/btnFloatingMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="#222222"
+        android:fontFamily="monospace"
+        android:text="@string/enable_floating_mode"
+        android:textColor="#FFFFFF" />
+
     <!-- Status Cards -->
     <LinearLayout
         android:layout_width="match_parent"
