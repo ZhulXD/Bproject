@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.ArrayDeque
 import java.util.ArrayList
@@ -44,6 +44,7 @@ class MainViewModel(
     private val viewModelScope = CoroutineScope(dispatcher + SupervisorJob())
 
     private val logBuffer = ArrayDeque<String>(MAX_LOG_SIZE)
+    private val logTimeFormatter = DateTimeFormatter.ofPattern(LOG_DATE_FORMAT, Locale.getDefault())
 
     init {
         checkRoot()
@@ -132,18 +133,16 @@ class MainViewModel(
     }
 
     fun log(message: String) {
-        val timestamp = SimpleDateFormat(LOG_DATE_FORMAT, Locale.getDefault()).format(Date())
-        val logEntry = "[$timestamp] $message"
-
-        synchronized(logBuffer) {
+        val newLogs = synchronized(logBuffer) {
+            val timestamp = LocalTime.now().format(logTimeFormatter)
+            val logEntry = "[$timestamp] $message"
             if (logBuffer.size >= MAX_LOG_SIZE) {
                 logBuffer.pollFirst()
             }
             logBuffer.addLast(logEntry)
+            ArrayList(logBuffer)
         }
 
-        // Optimize: Create new list only for update
-        val newLogs = synchronized(logBuffer) { ArrayList(logBuffer) }
         _uiState.update { it.copy(logs = newLogs) }
     }
 }

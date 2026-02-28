@@ -118,14 +118,13 @@ object RootUtil {
         val result = execute("settings get global private_dns_mode; settings get global private_dns_specifier")
         val output = result.getOrNull() ?: return@coroutineScope false
 
-        val lines = output.trim().split("\n").map { it.trim() }
-
+        val lines = output.lineSequence()
+            .map { it.trim() }
+            .take(2)
+            .toList()
         if (lines.size < 2) return@coroutineScope false
 
-        val dnsMode = lines[0]
-        val dnsSpecifier = lines[1]
-
-        checkPrivacyStatus(dnsMode, dnsSpecifier, nextDnsId)
+        checkPrivacyStatus(lines[0], lines[1], nextDnsId)
     }
 
     @VisibleForTesting
