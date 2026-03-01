@@ -208,6 +208,13 @@ object RootUtil {
         return execute("am force-stop com.mobile.legends")
     }
 
+    suspend fun launchMobileLegends(): Result<String> {
+        val explicitStart = "am start -n com.mobile.legends/com.moba.unityplugin.MobaGameMainActivity"
+        return execute(explicitStart).recoverCatching {
+            execute("monkey -p com.mobile.legends -c android.intent.category.LAUNCHER 1").getOrThrow()
+        }
+    }
+
     fun shutdown() {
         try {
             shellExecutor.close()
