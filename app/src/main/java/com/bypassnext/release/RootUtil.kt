@@ -204,6 +204,10 @@ object RootUtil {
         return execute(getDisablePrivacyScript(tempDir))
     }
 
+    suspend fun forceStopMobileLegends(): Result<String> {
+        return execute("am force-stop com.mobile.legends")
+    }
+
     fun shutdown() {
         try {
             shellExecutor.close()
