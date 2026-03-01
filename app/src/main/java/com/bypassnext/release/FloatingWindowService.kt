@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 class FloatingWindowService : Service() {
 
@@ -117,7 +118,7 @@ class FloatingWindowService : Service() {
                         val Xdiff = (event.rawX - initialTouchX).toInt()
                         val Ydiff = (event.rawY - initialTouchY).toInt()
 
-                        if (Math.abs(Xdiff) < 10 && Math.abs(Ydiff) < 10) {
+                        if (abs(Xdiff) < 10 && abs(Ydiff) < 10) {
                             v.performClick()
                         }
                         return true
@@ -173,8 +174,16 @@ class FloatingWindowService : Service() {
             }
 
             result.onSuccess {
-                updateIcon(!isActive)
-                val message = if (!isActive) getString(R.string.status_active) else getString(R.string.status_inactive)
+                val isNowActive = !isActive
+                updateIcon(isNowActive)
+                if (isNowActive) {
+                    repository.launchMobileLegends().onFailure { e ->
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@FloatingWindowService, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                val message = if (isNowActive) getString(R.string.status_active) else getString(R.string.status_inactive)
                 withContext(Dispatchers.Main) {
                      Toast.makeText(this@FloatingWindowService, message, Toast.LENGTH_SHORT).show()
                 }

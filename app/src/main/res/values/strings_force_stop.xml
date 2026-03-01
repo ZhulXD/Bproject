@@ -1,3 +1,4 @@
 <resources>
     <string name="auto_force_stop_ml">Auto Force Stop ML (com.mobile.legends) when disabled</string>
+    <string name="opening_mobile_legends">Opening Mobile Legends…</string>
 </resources>

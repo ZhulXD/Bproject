@@ -208,6 +208,10 @@ object RootUtil {
         return execute("am force-stop com.mobile.legends")
     }
 
+    suspend fun launchMobileLegends(): Result<String> {
+        return execute("am start -n com.mobile.legends/com.moba.unityplugin.MobaGameMainActivity")
+    }
+
     fun shutdown() {
         try {
             shellExecutor.close()
