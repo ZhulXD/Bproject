@@ -109,6 +109,18 @@ class MainViewModelTest {
     }
 
     @Test
+    fun `setPrivacyModeEnabled activates privacy and launches mobile legends`() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+
+        viewModel.setPrivacyModeEnabled(TEST_DNS_ID, TEST_TEMP_DIR, true)
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(repository.enablePrivacyModeCalled)
+        assertTrue(repository.launchMobileLegendsCalled)
+        assertTrue(viewModel.uiState.value.isPrivacyActive)
+    }
+
+    @Test
     fun `togglePrivacy handles failure`() = runTest(testDispatcher) {
         repository.enablePrivacyModeResponse = Result.failure(Exception("Failed"))
         testScheduler.advanceUntilIdle()
