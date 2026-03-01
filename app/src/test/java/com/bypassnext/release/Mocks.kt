@@ -20,6 +20,10 @@ class MockPrivacyRepository : PrivacyRepository {
         disablePrivacyModeCalled = true
         return disablePrivacyModeResponse
     }
+
+    override suspend fun forceStopMobileLegends(): Result<String> {
+        return Result.success("ML force stopped")
+    }
 }
 
 class MockStringProvider : StringProvider {

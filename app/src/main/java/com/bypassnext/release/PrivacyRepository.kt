@@ -5,6 +5,7 @@ interface PrivacyRepository {
     suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean
     suspend fun enablePrivacyMode(nextDnsId: String, tempDir: String): Result<String>
     suspend fun disablePrivacyMode(tempDir: String): Result<String>
+    suspend fun forceStopMobileLegends(): Result<String>
 }
 
 class DefaultPrivacyRepository : PrivacyRepository {
@@ -22,5 +23,9 @@ class DefaultPrivacyRepository : PrivacyRepository {
 
     override suspend fun disablePrivacyMode(tempDir: String): Result<String> {
         return RootUtil.disablePrivacyMode(tempDir)
+    }
+
+    override suspend fun forceStopMobileLegends(): Result<String> {
+        return RootUtil.forceStopMobileLegends()
     }
 }

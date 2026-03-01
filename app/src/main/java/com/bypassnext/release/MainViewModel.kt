@@ -22,6 +22,7 @@ data class MainUiState(
     val isRootGranted: Boolean = false,
     val isCheckingRoot: Boolean = true,
     val isPrivacyActive: Boolean = false,
+    val isAutoForceStopEnabled: Boolean = false,
     val logs: List<String> = emptyList(),
     val isBusy: Boolean = false
 )
@@ -69,6 +70,10 @@ class MainViewModel(
         }
     }
 
+    fun setAutoForceStop(enabled: Boolean) {
+        _uiState.update { it.copy(isAutoForceStopEnabled = enabled) }
+    }
+
     fun checkPrivacyStatus(nextDnsId: String) {
         if (nextDnsId.isEmpty()) return
 
@@ -86,6 +91,12 @@ class MainViewModel(
 
         if (_uiState.value.isPrivacyActive) {
             disablePrivacy(tempDir)
+            if (_uiState.value.isAutoForceStopEnabled) {
+                viewModelScope.launch {
+                    log(stringProvider.getString(R.string.auto_force_stop_ml))
+                    repository.forceStopMobileLegends()
+                }
+            }
         } else {
             enablePrivacy(nextDnsId, tempDir)
         }
