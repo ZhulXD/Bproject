@@ -6,9 +6,11 @@ class MockPrivacyRepository : PrivacyRepository {
     // Changing to Result to match interface
     var enablePrivacyModeResponse: Result<String> = Result.success("Privacy Mode Activated")
     var disablePrivacyModeResponse: Result<String> = Result.success("Privacy Mode Deactivated")
+    var launchMobileLegendsResponse: Result<String> = Result.success("Mobile Legends opened")
 
     var enablePrivacyModeCalled = false
     var disablePrivacyModeCalled = false
+    var launchMobileLegendsCalled = false
 
     override suspend fun isRootAvailable(): Boolean = isRootAvailableResponse
     override suspend fun isPrivacyModeEnabled(nextDnsId: String): Boolean = isPrivacyModeEnabledResponse
@@ -23,6 +25,11 @@ class MockPrivacyRepository : PrivacyRepository {
 
     override suspend fun forceStopMobileLegends(): Result<String> {
         return Result.success("ML force stopped")
+    }
+
+    override suspend fun launchMobileLegends(): Result<String> {
+        launchMobileLegendsCalled = true
+        return launchMobileLegendsResponse
     }
 }
 

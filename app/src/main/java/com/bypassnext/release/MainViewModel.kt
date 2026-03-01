@@ -98,16 +98,43 @@ class MainViewModel(
                 }
             }
         } else {
-            enablePrivacy(nextDnsId, tempDir)
+            enablePrivacy(nextDnsId, tempDir, launchMobileLegendsOnSuccess = true)
         }
     }
 
-    private fun enablePrivacy(nextDnsId: String, tempDir: String) {
+    fun setPrivacyModeEnabled(nextDnsId: String, tempDir: String, enabled: Boolean) {
+        if (_uiState.value.isBusy) return
+
+        if (enabled) {
+            if (_uiState.value.isPrivacyActive) return
+            enablePrivacy(nextDnsId, tempDir, launchMobileLegendsOnSuccess = true)
+        } else {
+            if (!_uiState.value.isPrivacyActive) return
+            disablePrivacy(tempDir)
+            if (_uiState.value.isAutoForceStopEnabled) {
+                viewModelScope.launch {
+                    log(stringProvider.getString(R.string.auto_force_stop_ml))
+                    repository.forceStopMobileLegends()
+                }
+            }
+        }
+    }
+
+    private fun enablePrivacy(
+        nextDnsId: String,
+        tempDir: String,
+        launchMobileLegendsOnSuccess: Boolean = false
+    ) {
         performPrivacyAction(
             startMessageRes = R.string.activating_privacy_mode,
             action = { repository.enablePrivacyMode(nextDnsId, tempDir) },
             targetState = true,
-            errorMessageRes = R.string.failed_to_activate
+            errorMessageRes = R.string.failed_to_activate,
+            onSuccess = {
+                if (launchMobileLegendsOnSuccess) {
+                    launchMobileLegends()
+                }
+            }
         )
     }
 
@@ -124,7 +151,8 @@ class MainViewModel(
         startMessageRes: Int,
         action: suspend () -> Result<String>,
         targetState: Boolean,
-        errorMessageRes: Int
+        errorMessageRes: Int,
+        onSuccess: (suspend () -> Unit)? = null
     ) {
         log(stringProvider.getString(startMessageRes))
         _uiState.update { it.copy(isBusy = true) }
@@ -134,11 +162,24 @@ class MainViewModel(
                 .onSuccess { output ->
                     log(output)
                     _uiState.update { it.copy(isPrivacyActive = targetState, isBusy = false) }
+                    onSuccess?.invoke()
                 }
                 .onFailure { error ->
                     log("Error: ${error.message}")
                     log(stringProvider.getString(errorMessageRes))
                     _uiState.update { it.copy(isBusy = false) }
+                }
+        }
+    }
+
+    private fun launchMobileLegends() {
+        viewModelScope.launch {
+            repository.launchMobileLegends()
+                .onSuccess {
+                    log(stringProvider.getString(R.string.opening_mobile_legends))
+                }
+                .onFailure { error ->
+                    log("Error opening ML: ${error.message}")
                 }
         }
     }

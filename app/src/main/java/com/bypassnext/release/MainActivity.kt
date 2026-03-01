@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
 
         val factory = MainViewModelFactory(DefaultPrivacyRepository(), AndroidStringProvider(this))
         viewModel = androidx.lifecycle.ViewModelProvider(this, factory)[MainViewModel::class.java]
+        viewModel.setAutoForceStop(isAutoForceStopEnabled)
 
         btnToggle.setOnClickListener {
             val nextDnsId = etNextDnsId.text.toString().trim()
