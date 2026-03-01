@@ -209,10 +209,27 @@ object RootUtil {
     }
 
     suspend fun launchMobileLegends(): Result<String> {
-        val explicitStart = "am start -n com.mobile.legends/com.moba.unityplugin.MobaGameMainActivity"
-        return execute(explicitStart).recoverCatching {
-            execute("monkey -p com.mobile.legends -c android.intent.category.LAUNCHER 1").getOrThrow()
-        }
+        val launchScript = """
+            PACKAGE_NAME="com.mobile.legends"
+
+            if ! pm list packages | grep -q "package:${'$'}PACKAGE_NAME"; then
+                echo "Package not installed: ${'$'}PACKAGE_NAME"
+                exit 1
+            fi
+
+            RESOLVED_ACTIVITY=$(cmd package resolve-activity --brief "${'$'}PACKAGE_NAME" 2>/dev/null | tail -n 1)
+            if echo "${'$'}RESOLVED_ACTIVITY" | grep -q "/"; then
+                am start --user 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "${'$'}RESOLVED_ACTIVITY" && exit 0
+            fi
+
+            am start --user 0 -p "${'$'}PACKAGE_NAME" && exit 0
+            monkey -p "${'$'}PACKAGE_NAME" -c android.intent.category.LAUNCHER 1 && exit 0
+
+            echo "Failed to launch ${'$'}PACKAGE_NAME"
+            exit 1
+        """.trimIndent()
+
+        return execute(launchScript)
     }
 
     fun shutdown() {

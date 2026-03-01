@@ -190,6 +190,17 @@ class RootUtilTest {
         assertTrue("Script should contain escaped single quote", script.contains("'\''"))
     }
 
+
+    @Test
+    fun testLaunchMobileLegends_UsesRobustLaunchScript() = runTest {
+        RootUtil.launchMobileLegends()
+
+        val executedScript = mockShellExecutor.executedCommands.lastOrNull() ?: ""
+        assertTrue("Script should resolve launcher activity", executedScript.contains("cmd package resolve-activity --brief"))
+        assertTrue("Script should attempt am start with launcher intent", executedScript.contains("am start --user 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER"))
+        assertTrue("Script should include monkey fallback", executedScript.contains("monkey -p \"\$PACKAGE_NAME\" -c android.intent.category.LAUNCHER 1"))
+    }
+
     @Test
     fun testEnablePrivacyMode_InvalidId() = runTest {
         val invalidDnsId = "id; whoami"
