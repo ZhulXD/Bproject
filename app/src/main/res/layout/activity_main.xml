@@ -162,27 +162,6 @@
         </LinearLayout>
     </ScrollView>
 
-
-        <!-- Force Stop Card -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#1A1A1A"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:layout_marginTop="16dp">
-
-            <CheckBox
-                android:id="@+id/cbAutoForceStop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:buttonTint="#00FF41"
-                android:textColor="#FFFFFF"
-                android:text="@string/auto_force_stop_ml"
-                android:fontFamily="monospace"
-                android:textSize="14sp" />
-        </LinearLayout>
-
     <!-- Terminal Log -->
     <TextView
         android:layout_width="wrap_content"
