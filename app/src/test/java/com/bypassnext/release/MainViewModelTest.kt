@@ -76,6 +76,19 @@ class MainViewModelTest {
         assertTrue(state.isPrivacyActive)
     }
 
+
+    @Test
+    fun `togglePrivacy enables privacy and launches mobile legends`() = runTest(testDispatcher) {
+        testScheduler.advanceUntilIdle()
+
+        viewModel.togglePrivacy(TEST_DNS_ID, TEST_TEMP_DIR)
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(repository.enablePrivacyModeCalled)
+        assertTrue(repository.launchMobileLegendsCalled)
+        assertTrue(viewModel.uiState.value.isPrivacyActive)
+    }
+
     @Test
     fun `togglePrivacy enables privacy when inactive`() = runTest(testDispatcher) {
         testScheduler.advanceUntilIdle()

@@ -98,7 +98,7 @@ class MainViewModel(
                 }
             }
         } else {
-            enablePrivacy(nextDnsId, tempDir)
+            enablePrivacy(nextDnsId, tempDir, launchMobileLegendsOnSuccess = true)
         }
     }
 
