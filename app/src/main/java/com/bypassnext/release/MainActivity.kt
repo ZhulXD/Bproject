@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.widget.Toast
 import android.util.Log
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import androidx.annotation.DrawableRes
@@ -26,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvCertStatus: TextView
     private lateinit var tvLog: TextView
     private lateinit var etNextDnsId: EditText
+    private lateinit var cbAutoForceStop: CheckBox
 
     private lateinit var viewModel: MainViewModel
     private val logDiffer = LogDiffer()
@@ -40,11 +42,14 @@ class MainActivity : AppCompatActivity() {
         tvCertStatus = findViewById(R.id.tvCertStatus)
         tvLog = findViewById(R.id.tvLog)
         etNextDnsId = findViewById(R.id.etNextDnsId)
+        cbAutoForceStop = findViewById(R.id.cbAutoForceStop)
 
         // Load saved ID
         val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
         val savedId = prefs.getString(AppConstants.KEY_NEXTDNS_ID, "") ?: ""
+        val isAutoForceStopEnabled = prefs.getBoolean(AppConstants.KEY_AUTO_FORCE_STOP, false)
         etNextDnsId.setText(savedId)
+        cbAutoForceStop.isChecked = isAutoForceStopEnabled
 
         val factory = MainViewModelFactory(DefaultPrivacyRepository(), AndroidStringProvider(this))
         viewModel = androidx.lifecycle.ViewModelProvider(this, factory)[MainViewModel::class.java]
@@ -54,11 +59,13 @@ class MainActivity : AppCompatActivity() {
             if (nextDnsId.isEmpty()) {
                 viewModel.log(getString(R.string.error_nextdns_id_required))
             } else {
-                // Save ID
+                // Save ID and Checkbox
                 getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE).edit()
                     .putString(AppConstants.KEY_NEXTDNS_ID, nextDnsId)
+                    .putBoolean(AppConstants.KEY_AUTO_FORCE_STOP, cbAutoForceStop.isChecked)
                     .apply()
 
+                viewModel.setAutoForceStop(cbAutoForceStop.isChecked)
                 val tempDir = cacheDir.absolutePath + "/filtered_certs"
                 viewModel.togglePrivacy(nextDnsId, tempDir)
             }
